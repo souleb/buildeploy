@@ -3,7 +3,7 @@ package app
 type Workflow struct {
 	ID   int
 	Name string
-	Job  []Job
+	Jobs []Job
 }
 
 type WorkflowService interface {
@@ -12,9 +12,9 @@ type WorkflowService interface {
 }
 
 type Job struct {
-	Name   string
-	Runner `yaml:",inline"`
-	Env    string `yaml:",omitempty"`
+	Name     string
+	Executor `yaml:",inline"`
+	Env      string `yaml:",omitempty"`
 	//Steps    []Step   `yaml:",inline"`
 	Branches string
 }
@@ -30,10 +30,14 @@ type Step struct {
 type StepService interface {
 }
 
-type Runner struct {
+type Executor struct {
 	Kind string   `yaml:"docker"`
 	Tags []string `yaml:",omitempty"`
 }
 
 type RunnerService interface {
+}
+
+type SchemaService interface {
+	Validate(data interface{})
 }

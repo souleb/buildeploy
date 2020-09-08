@@ -1,10 +1,12 @@
-package yaml
+package json
 
 import (
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
-func TestMapToInterface(t *testing.T) {
+func TestValidate(t *testing.T) {
 	tests := []string{
 		`
 name: "dev workflow"
@@ -36,10 +38,17 @@ jobs:
 `}
 
 	for _, test := range tests {
-		d := Handler{}
-		err := d.mapToInterface(test)
+		var res map[string]interface{}
+		err := yaml.Unmarshal([]byte(test), &res)
 		if err != nil {
-			t.Fatalf("mapping does not contain any key. got %s",
+			t.Fatalf("input is not a valid yaml got %s",
+				err)
+		}
+
+		s := NewSchemaService()
+		err = s.validate(res)
+		if err != nil {
+			t.Fatalf("validation failed, got %s",
 				err)
 		}
 	}

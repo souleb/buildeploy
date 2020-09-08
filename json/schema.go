@@ -1,6 +1,13 @@
-package jsonschema
+package json
 
-var schemaDataV1 = `{
+import (
+	"fmt"
+	"strings"
+
+	"github.com/xeipuuv/gojsonschema"
+)
+
+var schemaData = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "config_schema_v1.json",
   "type": "object",
@@ -26,7 +33,7 @@ var schemaDataV1 = `{
           "type": "string"
         },
         "executor": {
-          "$ref": "#/definitions/runner"
+          "$ref": "#/definitions/executor"
         },
         "env": {
           "type": "string"
@@ -47,10 +54,12 @@ var schemaDataV1 = `{
         "branches": {
           "type": "string"
         }
-      }
+      },
+        
+      "additionalProperties": false
     },
-    "runner": {
-      "id": "#/definitions/runner",
+    "executor": {
+      "id": "#/definitions/executor",
       "type": "object",
       "minProperties": 1,
       "maxProperties": 1,
@@ -100,4 +109,49 @@ var schemaDataV1 = `{
       "additionalProperties": false
     }
   }
-}`
+}
+`
+
+type SchemaService struct {
+	schema *gojsonschema.Schema
+}
+
+func NewSchemaService() *SchemaService {
+	schemaService := &SchemaService{}
+	schemaService.setUpSchema()
+
+	return schemaService
+}
+
+func (v *SchemaService) setUpSchema() {
+	schemaLoader := gojsonschema.NewStringLoader(schemaData)
+	schema, err := gojsonschema.NewSchema(schemaLoader)
+	if err != nil {
+		panic(err.Error())
+	}
+	v.schema = schema
+}
+
+func (v *SchemaService) validate(data interface{}) error {
+	documentLoader := gojsonschema.NewGoLoader(data)
+
+	//result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	result, err := v.schema.Validate(documentLoader)
+	if err != nil {
+		return err
+	}
+
+	if result.Valid() {
+		fmt.Printf("The document is valid\n")
+		return nil
+	}
+
+	fmt.Printf("The document is not valid. see errors :\n")
+	var validationErrors []string
+	for _, desc := range result.Errors() {
+		validationErrors = append(validationErrors, fmt.Sprintf("- %s\n", desc))
+	}
+
+	return fmt.Errorf(strings.Join(validationErrors, "\n"))
+
+}

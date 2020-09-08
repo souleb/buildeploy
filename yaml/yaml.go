@@ -1,26 +1,19 @@
 package yaml
 
 import (
-	"github.com/SouleBA/buildeploy/app"
-	"github.com/SouleBA/buildeploy/jsonschema"
-
 	"gopkg.in/yaml.v3"
 )
 
-type handler struct {
-	JobService  app.JobService
-	StepService app.StepService
+type Handler struct {
+	mapping interface{}
 }
 
-func yamlMapper(content string) (interface{}, error) {
-	var workflow interface{}
-	err := yaml.Unmarshal([]byte(content), &workflow)
+func (h *Handler) mapToInterface(data string) error {
+	err := yaml.Unmarshal([]byte(data), &h.mapping)
 	if err != nil {
-		return app.Workflow{}, err
+		return err
 	}
 
-	jsonschema.Validate(workflow)
-
-	return workflow, nil
+	return nil
 
 }
