@@ -41,5 +41,5 @@ message Step {
 }
 
 message Command {
-	map<string, string> expression = 1;
+	string command = 1;
 }
