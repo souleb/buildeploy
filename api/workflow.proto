@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/SouleBA/buildeploy/app/api"
+
+import "google/protobuf/timestamp.proto";
+
+message Workflow {
+	string name = 1;
+	int32 id = 2;
+	repeated Job jobs = 3;
+	string env = 4;
+	repeated Step steps = 5;
+}
+
+message Job {
+	string name = 1;
+	oneof executor {
+		Docker docker = 2;
+		Machine machine = 3;
+	}
+}
+
+message Docker {
+	string image = 1;
+	string tags = 2;
+}
+
+message Machine {
+	string os = 1;
+	string cpu_cores = 2;
+	string mem = 3;
+}
+
+message Step {
+	oneof step_command {
+		string key = 1;
+	}
+}
