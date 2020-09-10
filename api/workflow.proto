@@ -36,5 +36,10 @@ message Machine {
 message Step {
 	oneof step_command {
 		string key = 1;
+		Command command = 2;
 	}
+}
+
+message Command {
+	map<string, string> expression = 1;
 }
