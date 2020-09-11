@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/SouleBA/buildeploy/app"
 	"github.com/julienschmidt/httprouter"
+	"github.com/souleb/buildeploy/app"
 )
 
 type WorkflowHandler struct {

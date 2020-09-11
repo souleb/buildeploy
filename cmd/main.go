@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/SouleBA/buildeploy/http"
+	"github.com/souleb/buildeploy/http"
 )
 
 func main() {
