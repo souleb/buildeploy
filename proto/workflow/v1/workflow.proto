@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package api;
+package workflow.v1;
 
-option go_package = "github.com/SouleBA/buildeploy/api"
+option go_package = "github.com/souleb/buildeploy/proto/workflow/v1";
 
 import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 
-service SearchService {
+service WorkflowService {
   rpc CreateWorkflow(CreateWorkflowRequest) returns (CreateWorkflowResponse) {
 		option (google.api.http) ={
 			post: "/v1/workflow"
@@ -30,8 +30,8 @@ message Workflow {
 	repeated Job jobs = 3;
 	string env = 4;
 	repeated Step steps = 5;
-	google.protobuf.Timestamp created_at = 5;
-	google.protobuf.Timestamp updated_at = 6;
+	google.protobuf.Timestamp created_at = 6;
+	google.protobuf.Timestamp updated_at = 7;
 }
 
 message Job {
