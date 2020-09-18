@@ -4,7 +4,7 @@ package workflow.v1;
 
 option go_package = "github.com/souleb/buildeploy/proto/workflow/v1";
 
-import "google/protobuf/timestamp.proto";
+//import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 
 service WorkflowService {
@@ -28,10 +28,8 @@ message Workflow {
 	string name = 1;
 	int32 id = 2;
 	repeated Job jobs = 3;
-	string env = 4;
-	repeated Step steps = 5;
-	google.protobuf.Timestamp created_at = 6;
-	google.protobuf.Timestamp updated_at = 7;
+	//google.protobuf.Timestamp created_at = 6;
+	//google.protobuf.Timestamp updated_at = 7;
 }
 
 message Job {
@@ -40,6 +38,9 @@ message Job {
 		Docker docker = 2;
 		Machine machine = 3;
 	}
+	repeated Step steps = 4;
+	string env = 5;
+	string branches = 6;
 }
 
 message Docker {
