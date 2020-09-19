@@ -36,6 +36,7 @@ func (w *WorkflowService) Create(workflow *app.Workflow) error {
 }
 
 // DestructiveReset drops the workflow table and rebuilds it
-//func (w *WorkflowService) DestructiveReset() {
-////	w.Client.AutoMigrate(&app.Workflow{})
-//}
+func (w *WorkflowService) DestructiveReset() {
+	w.Client.DB.Migrator().DropTable(&app.Workflow{})
+	w.Client.AutoMigrate(&app.Workflow{Jobs: []app.Job{{Executor: &app.Docker{}}}})
+}

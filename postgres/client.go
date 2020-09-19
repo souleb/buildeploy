@@ -46,7 +46,7 @@ func (c *Client) Open() error {
 		c.Host, c.Port, c.User, c.Password, c.DBname, c.Timezone)
 	//dsn := "user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 
 	if err != nil {
@@ -61,9 +61,8 @@ func (c *Client) Open() error {
 }
 
 func (c *Client) AutoMigrate(object interface{}) error {
-	err := c.DB.AutoMigrate(object)
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("gorm db AutoMigrate %v failed", object))
+	if err := c.DB.AutoMigrate(object).Error; err != nil {
+		return fmt.Errorf(err())
 	}
 
 	return nil

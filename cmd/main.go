@@ -32,8 +32,8 @@ func main() {
 	}
 
 	//WorkflowService
-	//ws := postgres.WorkflowService{Client: client}
-	//ws.DestructiveReset()
+	ws := postgres.WorkflowService{Client: client}
+	ws.DestructiveReset()
 
 	server, err := http.NewServer()
 	if err != nil {

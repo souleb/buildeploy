@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -28,9 +27,9 @@ type WorkflowService interface {
 }
 
 type Job struct {
-	ID   uint `gorm:"primaryKey"`
-	Name string
-	Executor
+	ID        uint `gorm:"primaryKey"`
+	Name      string
+	Executor  isJobExecutor
 	Steps     []Step `gorm:"embedded"`
 	Env       string
 	Branches  string
@@ -52,8 +51,8 @@ type Step struct {
 type StepService interface {
 }
 
-type Executor interface {
-	Kind() string
+type isJobExecutor interface {
+	isJobExecutor()
 }
 
 type Docker struct {
@@ -61,9 +60,7 @@ type Docker struct {
 	Tags  string
 }
 
-func (d *Docker) Kind() string {
-	return fmt.Sprintf("%T", *d)
-}
+func (d *Docker) isJobExecutor() {}
 
 type Machine struct {
 	OS       string
@@ -71,9 +68,7 @@ type Machine struct {
 	Memory   string
 }
 
-func (m *Machine) Kind() string {
-	return fmt.Sprintf("%T", *m)
-}
+func (m *Machine) isJobExecutor() {}
 
 type RunnerService interface {
 }
