@@ -1,4 +1,4 @@
-package json
+package json_schema
 
 import (
 	"testing"
@@ -46,7 +46,7 @@ jobs:
 		}
 
 		s := NewSchemaService()
-		err = s.validate(res)
+		err = s.Validate(res)
 		if err != nil {
 			t.Fatalf("validation failed, got %s",
 				err)

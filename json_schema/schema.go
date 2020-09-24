@@ -132,7 +132,9 @@ func (v *SchemaService) setUpSchema() {
 	v.schema = schema
 }
 
-func (v *SchemaService) validate(data interface{}) error {
+// Validate take a given interface and validate it.
+// It uses it internal schema do to so.
+func (v *SchemaService) Validate(data interface{}) error {
 	documentLoader := gojsonschema.NewGoLoader(data)
 
 	//result, err := gojsonschema.Validate(schemaLoader, documentLoader)
