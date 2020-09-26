@@ -97,8 +97,8 @@ func (commands *Commands) Scan(src interface{}) error {
 	Command Command
 }*/
 
-type isJobExecutor interface {
-	isJobExecutor()
+type Runner interface {
+	isJobRunner()
 }
 
 // Docker is an Executor type
@@ -107,7 +107,7 @@ type Docker struct {
 	Tags  string
 }
 
-func (d *Docker) isJobExecutor() {}
+func (d *Docker) isJobRunner() {}
 
 // Machine is an executor type
 type Machine struct {
@@ -116,7 +116,7 @@ type Machine struct {
 	Memory   string
 }
 
-func (m *Machine) isJobExecutor() {}
+func (m *Machine) isJobRunner() {}
 
 // SchemaService represents a service for managing jsonschemas.
 type SchemaService interface {

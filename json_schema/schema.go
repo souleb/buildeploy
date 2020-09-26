@@ -1,4 +1,4 @@
-package json
+package json_schema
 
 import (
 	"fmt"
