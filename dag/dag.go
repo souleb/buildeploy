@@ -1,63 +1,101 @@
 package dag
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-// Vertex of the graph
-type Vertex interface{}
+// EdgeSet is a set data structure
+type EdgeSet map[Vertex]int
 
 // Graph represents a directed acyclic graph
 type Graph struct {
-	adjacencyMap map[Vertex]LinkedList
+	adjacencyMap map[Vertex]EdgeSet
 }
 
-func NewGraph() *Graph {
-	return &Graph{
-		adjacencyMap: map[Vertex]LinkedList{},
+// Add a Vertex to the adjacencyMap.
+func (g *Graph) Add(v Vertex) {
+	g.init()
+	// Add the vertex entry
+	hash := hashcode(v)
+	if _, ok := g.adjacencyMap[hash]; !ok {
+		g.adjacencyMap[hash] = make(EdgeSet)
 	}
 }
 
-func (g *Graph) AddEdge(source Vertex, target Vertex) {
+// Remove delete a Vertex from the adjacencyMap.
+func (g *Graph) Remove(v Vertex) {
+	hash := hashcode(v)
+	// delete the vertex entry
+	delete(g.adjacencyMap, hash)
+
+	// delete all occurence of the Vertex in the sets.
+	for _, set := range g.adjacencyMap {
+		delete(set, hash)
+	}
+}
+
+// AddEdge add an edge to the Graph.
+func (g *Graph) AddEdge(source, target Vertex, weight int) {
+	g.init()
 
 	// Make sure that every used vertex shows up in our map keys.
-	if _, ok := g.adjacencyMap[source]; !ok {
-		g.adjacencyMap[source] = LinkedList{}
+	hashSource, hashTarget := hashcode(source), hashcode(target)
+	if _, ok := g.adjacencyMap[hashSource]; !ok {
+		g.adjacencyMap[hashSource] = make(EdgeSet)
 	}
 
-	if _, ok := g.adjacencyMap[target]; !ok {
-		g.adjacencyMap[target] = LinkedList{}
+	if _, ok := g.adjacencyMap[hashTarget]; !ok {
+		g.adjacencyMap[hashTarget] = make(EdgeSet)
 	}
 
-	g.addEdgeUniquify(source, target)
+	g.adjacencyMap[hashSource][hashTarget] = weight
 }
 
-func (g *Graph) addEdgeUniquify(source Vertex, target Vertex) {
-	tempList := g.adjacencyMap[source]
-	if (tempList != LinkedList{}) {
-		tempList.Remove(target)
+// RemoveEdge delete an edge from the adjacencyMap.
+func (g *Graph) RemoveEdge(source, target Vertex) {
+	hashSource, hashTarget := hashcode(source), hashcode(target)
+	if set, ok := g.adjacencyMap[hashSource]; ok {
+		delete(set, hashTarget)
 	}
-
-	tempList.Append(target)
-	g.adjacencyMap[source] = tempList
-
 }
 
-func (g *Graph) PrintEdges() {
-	for _, list := range g.adjacencyMap {
-		fmt.Println("The vertex has an edge towards: ")
-		if (list != LinkedList{}) {
-			fmt.Println(list)
+// HasEdge check if an edge exist between to vertices.
+func (g *Graph) HasEdge(source, target Vertex) bool {
+	hashSource, hashTarget := hashcode(source), hashcode(target)
+	if set, ok := g.adjacencyMap[hashSource]; ok {
+		if _, ok := set[hashTarget]; ok {
+			return true
 		}
 	}
+	return false
 }
 
-func (g *Graph) HasEdge(source Vertex, target Vertex) bool {
-	if list, ok := g.adjacencyMap[source]; ok {
-		if (list != LinkedList{}) {
-			if err := list.Get(target); err != nil {
-				return false
-			}
+// String is a human-friendly representation of the graph
+func (g *Graph) String() string {
+	var buf strings.Builder
+	buf.WriteString("\n")
+
+	for v, targets := range g.adjacencyMap {
+		buf.WriteString(fmt.Sprintf("%s\n", VertexName(v)))
+		deps := make([]string, len(targets))
+
+		for target, weight := range targets {
+			deps = append(deps, fmt.Sprintf(
+				"%s (%d)", VertexName(target), weight))
+		}
+
+		// Write dependencies
+		for _, d := range deps {
+			buf.WriteString(fmt.Sprintf("  %s\n", d))
 		}
 	}
 
-	return true
+	return buf.String()
+}
+
+func (g *Graph) init() {
+	if g.adjacencyMap == nil {
+		g.adjacencyMap = make(map[Vertex]EdgeSet)
+	}
 }
