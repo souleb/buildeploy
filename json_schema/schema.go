@@ -53,6 +53,16 @@ var schemaData = `{
         },
         "branches": {
           "type": "string"
+        },
+        "needs": {
+          "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array"
+              }
+          ]
         }
       },
         
@@ -133,7 +143,7 @@ func (v *SchemaService) setUpSchema() {
 }
 
 // Validate take a given interface and validate it.
-// It uses it internal schema do to so.
+// It uses its internal schema do to so.
 func (v *SchemaService) Validate(data interface{}) error {
 	documentLoader := gojsonschema.NewGoLoader(data)
 

@@ -2,6 +2,7 @@ package dag
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -71,22 +72,50 @@ func (g *Graph) HasEdge(source, target Vertex) bool {
 	return false
 }
 
-// String is a human-friendly representation of the graph
-func (g *Graph) String() string {
-	var buf strings.Builder
-	buf.WriteString("\n")
+// HasVertex check if a vertex is in the adjacencyMap.
+func (g *Graph) HasVertex(v Vertex) bool {
+	hash := hashcode(v)
+	if _, ok := g.adjacencyMap[hash]; ok {
+		return true
+	}
+	return false
+}
 
+func (g *Graph) verticesEdgesMapAndSlice() ([]string, map[string][]string) {
+	names := make([]string, 0, len(g.adjacencyMap))
+	mapping := make(map[string][]string, len(g.adjacencyMap))
+
+	// Get the vertices and edges in alphabetical orders by using a string sort.
+	// having this deterministic behavior make testing easier.
 	for v, targets := range g.adjacencyMap {
-		buf.WriteString(fmt.Sprintf("%s\n", VertexName(v)))
-		deps := make([]string, len(targets))
+		names = append(names, VertexName(v))
+		deps := make([]string, 0, len(targets))
 
 		for target, weight := range targets {
 			deps = append(deps, fmt.Sprintf(
 				"%s (%d)", VertexName(target), weight))
 		}
+		sort.Strings(deps)
 
-		// Write dependencies
-		for _, d := range deps {
+		mapping[VertexName(v)] = deps
+
+	}
+
+	sort.Strings(names)
+
+	return names, mapping
+}
+
+// String is a human-friendly representation of the graph
+func (g *Graph) String() string {
+	var buf strings.Builder
+	buf.WriteString("\n")
+
+	names, mapping := g.verticesEdgesMapAndSlice()
+
+	for _, name := range names {
+		buf.WriteString(fmt.Sprintf("%s\n", name))
+		for _, d := range mapping[name] {
 			buf.WriteString(fmt.Sprintf("  %s\n", d))
 		}
 	}

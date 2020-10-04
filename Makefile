@@ -1,4 +1,5 @@
 PROJECTNAME = $(shell basename "$(PWD)")
+DBNAME = $(PROJECTNAME)db
 
 # Go related variables.
 GOBASE = $(shell pwd)
@@ -48,7 +49,7 @@ setup:
 # helper rule for deployment
 check-environment:
 ifndef ENV
-    $(error ENV not set, allowed values - `staging` or `production`)
+    $(error ENV not set, allowed values - `development`, `staging` or `production`)
 endif
 
 .PHONY: docker-build
@@ -70,16 +71,14 @@ help: Makefile
 .PHONY: gen
 ## gen: generate all proto files
 gen:
-	protoc -I. --go_out=plugins=grpc:$GOPATH/src ./proto/workflow/v1/workflow.proto
-	protoc -I. --grpc-gateway_out=logtostderr=true,paths=source_relative:. \ 
+	protoc -I. --go_out=plugins=grpc:$(GOPATH)/src ./proto/workflow/v1/workflow.proto
+	protoc -I. --grpc-gateway_out=logtostderr=true,paths=source_relative:. \
 	./proto/workflow/v1/workflow.proto
 
 ## docker-postgres: launch a new postgres server with a default db set to project's name
 docker-postgres:
 	@docker pull postgres
-	@mkdir -p $(GOBASE)/docker/volumes/postgres
-	@docker run --rm   --name pg-docker -e POSTGRES_PASSWORD=docker -e POSTGRES_DB=$(PROJECTNAME) \ 
-	-d -p 5432:5432 \ 
-	-v $(GOBASE)/docker/volumes/postgres:/var/lib/postgresql/data  postgres
-
-
+	@mkdir -p $(HOME)/docker/volumes/postgres
+	@docker run --rm --name pg-docker -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=$(DBNAME) \
+	-d -p 5432:5432 \
+	-v $(HOME)/docker/volumes/postgres:/var/lib/postgresql/data  postgres

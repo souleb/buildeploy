@@ -34,13 +34,17 @@ message Workflow {
 
 message Job {
 	string name = 1;
-	oneof executor {
-		Docker docker = 2;
-		Machine machine = 3;
+	message Executor {
+		oneof executor {
+			Docker docker = 1;
+			Machine machine = 2;
+		}
 	}
-	repeated Step steps = 4;
-	string env = 5;
-	string branches = 6;
+	Executor executor = 2;
+	repeated Step steps = 3;
+	string env = 4;
+	string branches = 5;
+	repeated string needs = 6;
 }
 
 message Docker {
@@ -55,12 +59,5 @@ message Machine {
 }
 
 message Step {
-	oneof step_command {
-		string key = 1;
-		Command command = 2;
-	}
-}
-
-message Command {
-	string command = 1;
+		repeated string command = 1;
 }
