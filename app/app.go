@@ -27,6 +27,12 @@ const (
 	SUCCESS
 )
 
+type Pipeline struct {
+	ID         uint
+	WorkflowID uint
+	Status     Status
+}
+
 // Workflow defines a set of jobs constituing the workflow.
 type Workflow struct {
 	ID        uint `gorm:"primaryKey"`
@@ -47,12 +53,13 @@ type WorkflowService interface {
 // Job is a defined set of steps to execute
 // It uses a defined executor to do so
 type Job struct {
-	ID   uint `gorm:"primaryKey"`
-	Name string
-	//Executor  isJobExecutor
+	ID         uint `gorm:"primaryKey"`
+	Name       string
+	Runner     Runner
 	Steps      Commands
 	Env        string
 	Branches   string
+	Needs      []string
 	Status     Status
 	WorkflowID uint
 	CreatedAt  time.Time
@@ -91,12 +98,6 @@ func (commands *Commands) Scan(src interface{}) error {
 	return nil
 }
 
-//
-/*type Step struct {
-	Keyword Keyword
-	Command Command
-}*/
-
 type Runner interface {
 	isJobRunner()
 }
@@ -120,5 +121,10 @@ func (m *Machine) isJobRunner() {}
 
 // SchemaService represents a service for managing jsonschemas.
 type SchemaService interface {
-	Validate(data interface{})
+	Validate(data interface{}) error
+}
+
+// SchedulerService represents a service for managing schedulers.
+type SchedulerService interface {
+	Schedule(workflow *Workflow) error
 }

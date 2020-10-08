@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"io"
 	"os"
 
-	"github.com/souleb/buildeploy/app"
 	"github.com/souleb/buildeploy/http"
 	"github.com/souleb/buildeploy/postgres"
+	"github.com/souleb/buildeploy/workflow"
 )
 
 const (
@@ -17,26 +17,18 @@ const (
 	dbname   = "buildeploydb"
 )
 
+const (
+	exitFail = 1
+)
+
 func main() {
 
-	//New db connection
-	opt := func(c *postgres.Client) {
-		c.Host = host
-		c.Port = port
-		c.User = user
-		c.Password = password
-		c.DBname = dbname
-	}
-
-	client := postgres.NewClient(opt)
-	err := client.Open()
-
+	err := run(os.Stdout)
 	if err != nil {
-		panic(err)
+		os.Exit(exitFail)
 	}
 
-	//WorkflowService
-	ws := postgres.WorkflowService{Client: client}
+	/*ws := postgres.WorkflowService{Client: client}
 	ws.DestructiveReset()
 	ws.Create(&app.Workflow{})
 
@@ -48,11 +40,28 @@ func main() {
 	}
 
 	fmt.Println(foundUser)
+	*/
 
-	server, err := http.NewServer()
+	scheduler := &workflow.SchedulerService{}
+
+	server, err := http.NewServer(scheduler)
 	if err != nil {
 		panic(err)
 	}
 	server.Open()
 	defer server.Close()
+}
+
+func run(stdout io.Writer) error {
+	//New db connection
+	opt := func(c *postgres.Client) {
+		c.Host = host
+		c.Port = port
+		c.User = user
+		c.Password = password
+		c.DBname = dbname
+	}
+
+	client := postgres.NewClient(opt)
+	return client.Open()
 }

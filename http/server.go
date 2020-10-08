@@ -3,12 +3,12 @@ package http
 import (
 	"net"
 
+	"github.com/souleb/buildeploy/app"
 	pb "github.com/souleb/buildeploy/proto/workflow/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
-// DefaultAddr is the default bind address.
 const defaultAdrr = ":3000"
 
 type Server struct {
@@ -16,9 +16,10 @@ type Server struct {
 	//Handler    *Handler
 	grpcServer *grpc.Server
 	Addr       string
+	scheduler  app.SchedulerService
 }
 
-func NewServer() (*Server, error) {
+func NewServer(scheduler app.SchedulerService) (*Server, error) {
 
 	//creds, _ := credentials.NewServerTLSFromFile(certFile, keyFile)
 	server := &Server{
@@ -26,6 +27,7 @@ func NewServer() (*Server, error) {
 		//grpcServer: grpc.NewServer(grpc.Creds(creds)),
 		grpcServer: grpc.NewServer(),
 		Addr:       defaultAdrr,
+		scheduler:  scheduler,
 	}
 
 	ln, err := net.Listen("tcp", server.Addr)
@@ -39,10 +41,9 @@ func NewServer() (*Server, error) {
 
 func (s *Server) Open() error {
 
-	pb.RegisterWorkflowServiceServer(s.grpcServer, &WorkflowHandler{})
+	pb.RegisterWorkflowServiceServer(s.grpcServer, &WorkflowHandler{SchedulerService: s.scheduler})
 	// Register reflection service on gRPC server.
 	reflection.Register(s.grpcServer)
-	// Start HTTP server.
 	s.grpcServer.Serve(s.ln)
 
 	return nil

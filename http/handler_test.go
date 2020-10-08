@@ -19,19 +19,17 @@ func CreateWorkflowTest(t *testing.T) {
 				Jobs: []*pb.Job{
 					{
 						Name: "job1",
-						Executor: &pb.Job_Docker{
-							Docker: &pb.Docker{
-								Image: "docker.io/image-test",
-								Tags:  "stable, golang",
+						Runner: &pb.Job_Runner{
+							Type: &pb.Job_Runner_Docker{
+								Docker: &pb.Docker{
+									Image: "docker.io/image-test",
+									Tags:  "stable, golang",
+								},
 							},
 						},
-						Steps: []*pb.Step{
-							{
-								StepCommand: &pb.Step_Command{
-									Command: &pb.Command{
-										Command: "ls -l $PWD",
-									},
-								},
+						Steps: &pb.Steps{
+							Command: []string{
+								"ls -l $PWD",
 							},
 						},
 						Env:      "integration",
@@ -48,19 +46,17 @@ func CreateWorkflowTest(t *testing.T) {
 				Jobs: []*pb.Job{
 					{
 						Name: "job1",
-						Executor: &pb.Job_Docker{
-							Docker: &pb.Docker{
-								Image: "docker.io/image-test2",
-								Tags:  "stable, golang",
+						Runner: &pb.Job_Runner{
+							Type: &pb.Job_Runner_Docker{
+								Docker: &pb.Docker{
+									Image: "docker.io/image-test2",
+									Tags:  "stable, golang",
+								},
 							},
 						},
-						Steps: []*pb.Step{
-							{
-								StepCommand: &pb.Step_Command{
-									Command: &pb.Command{
-										Command: "curl www.google.com",
-									},
-								},
+						Steps: &pb.Steps{
+							Command: []string{
+								"curl www.google.com",
 							},
 						},
 						Env:      "release",

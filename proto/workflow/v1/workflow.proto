@@ -34,14 +34,14 @@ message Workflow {
 
 message Job {
 	string name = 1;
-	message Executor {
-		oneof executor {
+	message Runner {
+		oneof type {
 			Docker docker = 1;
 			Machine machine = 2;
 		}
 	}
-	Executor executor = 2;
-	repeated Step steps = 3;
+	Runner runner = 2;
+	Steps steps = 3;
 	string env = 4;
 	string branches = 5;
 	repeated string needs = 6;
@@ -54,10 +54,10 @@ message Docker {
 
 message Machine {
 	string os = 1;
-	string cpu_cores = 2;
-	string mem = 3;
+	string cpuCores = 2;
+	string memory = 3;
 }
 
-message Step {
+message Steps {
 		repeated string command = 1;
 }
