@@ -42,7 +42,7 @@ func main() {
 	fmt.Println(foundUser)
 	*/
 
-	scheduler := &workflow.SchedulerService{}
+	scheduler := workflow.NewSchedulerService()
 
 	server, err := http.NewServer(scheduler)
 	if err != nil {

@@ -67,10 +67,6 @@ type Job struct {
 	DeletedAt  *time.Time `gorm:"index"`
 }
 
-// JobService represents a service for managing jobs.
-type JobService interface {
-}
-
 // Commands are actions to be performed
 type Commands []string
 

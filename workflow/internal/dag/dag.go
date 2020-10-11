@@ -7,11 +7,13 @@ import (
 )
 
 // EdgeSet is a set data structure
-type EdgeSet map[Vertex]int
+type EdgeSet map[interface{}]int
 
 // Graph represents a directed acyclic graph
 type Graph struct {
-	adjacencyMap map[Vertex]EdgeSet
+	adjacencyMap map[interface{}]EdgeSet
+	// maintain a mapping of the vertices to their hashes.
+	hashMap map[interface{}]Vertex
 }
 
 // Add a Vertex to the adjacencyMap.
@@ -22,6 +24,8 @@ func (g *Graph) Add(v Vertex) {
 	if _, ok := g.adjacencyMap[hash]; !ok {
 		g.adjacencyMap[hash] = make(EdgeSet)
 	}
+
+	g.hashMap[hash] = v
 }
 
 // Remove delete a Vertex from the adjacencyMap.
@@ -34,6 +38,18 @@ func (g *Graph) Remove(v Vertex) {
 	for _, set := range g.adjacencyMap {
 		delete(set, hash)
 	}
+
+	delete(g.hashMap, hash)
+}
+
+// Vertex returns a Vertex pointer if it exists in the graph
+// Othervise returns a false boolean
+func (g *Graph) Vertex(hash string) (*Vertex, bool) {
+	if v, ok := g.hashMap[hash]; ok {
+		return &v, true
+	}
+
+	return nil, false
 }
 
 // AddEdge add an edge to the Graph.
@@ -43,11 +59,11 @@ func (g *Graph) AddEdge(source, target Vertex, weight int) {
 	// Make sure that every used vertex shows up in our map keys.
 	hashSource, hashTarget := hashcode(source), hashcode(target)
 	if _, ok := g.adjacencyMap[hashSource]; !ok {
-		g.adjacencyMap[hashSource] = make(EdgeSet)
+		g.Add(source)
 	}
 
 	if _, ok := g.adjacencyMap[hashTarget]; !ok {
-		g.adjacencyMap[hashTarget] = make(EdgeSet)
+		g.Add(target)
 	}
 
 	g.adjacencyMap[hashSource][hashTarget] = weight
@@ -125,6 +141,10 @@ func (g *Graph) String() string {
 
 func (g *Graph) init() {
 	if g.adjacencyMap == nil {
-		g.adjacencyMap = make(map[Vertex]EdgeSet)
+		g.adjacencyMap = make(map[interface{}]EdgeSet)
+	}
+
+	if g.hashMap == nil {
+		g.hashMap = make(map[interface{}]Vertex)
 	}
 }
