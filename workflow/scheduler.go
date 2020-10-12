@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/pkg/errors"
 	"github.com/souleb/buildeploy/app"
 	"github.com/souleb/buildeploy/workflow/internal/dag"
 )
@@ -40,11 +41,13 @@ func NewSchedulerService() *SchedulerService {
 func (s *SchedulerService) Schedule(workflow *app.Workflow) error {
 	g, err := s.convertToGraph(workflow)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "creating a graph of this workflow failed.")
 	}
 	s.GraphMap[workflow.Name] = g
 	fmt.Println("Here the scheduler take action")
 	fmt.Println(s.GraphMap[workflow.Name])
+	fmt.Println("And the topological sort")
+	dag.TopologicalSort(s.GraphMap[workflow.Name])
 	fmt.Println("\nScheduler has finished bye!!!")
 	return nil
 }
@@ -62,9 +65,9 @@ func (s *SchedulerService) convertToGraph(workflow *app.Workflow) (*dag.Graph, e
 			for _, name := range needs {
 				v, ok := g.Vertex(hashMap[name])
 				if !ok {
-					return nil, fmt.Errorf("job %s does not exist", name)
+					return nil, fmt.Errorf("Job %s does not exist", name)
 				}
-				g.AddEdge(v, &job, 1)
+				g.AddEdge(v.(*JobVertex), &job, 1)
 			}
 		} else {
 			g.Add(&job)

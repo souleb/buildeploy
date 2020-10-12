@@ -44,9 +44,9 @@ func (g *Graph) Remove(v Vertex) {
 
 // Vertex returns a Vertex pointer if it exists in the graph
 // Othervise returns a false boolean
-func (g *Graph) Vertex(hash string) (*Vertex, bool) {
+func (g *Graph) Vertex(hash string) (Vertex, bool) {
 	if v, ok := g.hashMap[hash]; ok {
-		return &v, true
+		return v, true
 	}
 
 	return nil, false

@@ -2,10 +2,10 @@ package http
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/pkg/errors"
 	"github.com/souleb/buildeploy/app"
 	pb "github.com/souleb/buildeploy/proto/workflow/v1"
 	v1 "github.com/souleb/buildeploy/proto/workflow/v1"
@@ -20,23 +20,21 @@ type WorkflowHandler struct {
 }
 
 func (wh *WorkflowHandler) CreateWorkflow(ctx context.Context, createWorkflowRequest *pb.CreateWorkflowRequest) (*pb.CreateWorkflowResponse, error) {
-	fmt.Println(createWorkflowRequest.Item)
 	w := convertToWorkflow(createWorkflowRequest.Item)
 
-	err := wh.SchedulerService.Schedule(w)
-	if err != nil {
-		return nil, err
-	}
 	/*err := wh.SchemaService.Validate(w)
 	if err != nil {
 		return nil, err
 	}*/
 
-	fmt.Println(*w)
+	err := wh.SchedulerService.Schedule(w)
+	if err != nil {
+		return nil, errors.Wrap(err, "Impossible to schedule the workflow.")
+	}
+
 	return &pb.CreateWorkflowResponse{Id: "testid"}, nil
 }
 
-// TODO: use reflection for the conversion
 func convertToWorkflow(data *v1.Workflow) *app.Workflow {
 	jobs := make([]app.Job, 0, len(data.Jobs))
 	for _, job := range data.Jobs {
