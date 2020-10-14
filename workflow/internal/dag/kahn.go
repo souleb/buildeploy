@@ -61,21 +61,26 @@ func generateTopo(graph *Graph, indegreeMap map[string]int) ([]string, int) {
 	return topOrder, visited
 }
 
-func processIndegrees(indegreeMap map[string]int, graph *Graph) {
+func processIndegrees(indegreeMap map[string]int, graph *Graph) int {
 	/*
 			for each node in Nodes
 		    indegree[node] = 0;
 			for each edge(src, dest) in Edges
 				indegree[dest]++
 	*/
+	vertexCount := 0
 
 	for source, edges := range graph.adjacencyMap {
 		if _, ok := indegreeMap[source.(string)]; ok == false {
 			indegreeMap[source.(string)] = 0
+			vertexCount++
 		}
 		for target := range edges {
 			indegreeMap[target.(string)]++
+			vertexCount++
 		}
 	}
+
+	return vertexCount
 
 }

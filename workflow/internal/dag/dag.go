@@ -122,6 +122,26 @@ func (g *Graph) verticesEdgesMapAndSlice() ([]string, map[string][]string) {
 	return names, mapping
 }
 
+// Copy returns a copy of the graph
+func (g *Graph) Copy() *Graph {
+	var newGraph Graph
+	newGraph.init()
+
+	for hash, edges := range g.adjacencyMap {
+		newEdges := make(EdgeSet)
+		for edge, weight := range edges {
+			newEdges[edge] = weight
+		}
+		newGraph.adjacencyMap[hash] = newEdges
+	}
+
+	for hash, vertex := range g.hashMap {
+		newGraph.hashMap[hash] = vertex
+	}
+
+	return &newGraph
+}
+
 // String is a human-friendly representation of the graph
 func (g *Graph) String() string {
 	var buf strings.Builder
