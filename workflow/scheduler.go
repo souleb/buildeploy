@@ -43,11 +43,12 @@ func (s *SchedulerService) Schedule(workflow *app.Workflow) error {
 	if err != nil {
 		return errors.Wrap(err, "creating a graph of this workflow failed.")
 	}
-	s.GraphMap[workflow.Name] = g
 	fmt.Println("Here the scheduler take action")
-	fmt.Println(s.GraphMap[workflow.Name])
+	fmt.Println(g)
 	fmt.Println("And the topological sort")
-	dag.TopologicalSort(s.GraphMap[workflow.Name])
+	topOrder := g.TopologicalSort()
+	fmt.Println(*topOrder)
+	s.GraphMap[workflow.Name] = g
 	fmt.Println("\nScheduler has finished bye!!!")
 	return nil
 }
