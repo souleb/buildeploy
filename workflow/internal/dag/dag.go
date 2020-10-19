@@ -17,6 +17,7 @@ type Graph struct {
 }
 
 // Add a Vertex to the adjacencyMap.
+// It a Vertex with the same identity exist, it gets overwritten.
 func (g *Graph) Add(v Vertex) {
 	g.init()
 	// Add the vertex entry

@@ -64,9 +64,14 @@ func (s *SchedulerService) convertToGraph(workflow *app.Workflow) (*dag.Graph, e
 		hashMap[job.Name] = job.Hashcode().(string)
 		if needs := job.Needs; needs != nil {
 			for _, name := range needs {
+				// TO DO: Use cycle detection instead
 				v, ok := g.Vertex(hashMap[name])
 				if !ok {
-					return nil, fmt.Errorf("Job %s does not exist", name)
+					// We go ahead and perform an early creation of the job,
+					// It will be overwritten later on in the for loop.
+					v = &JobVertex{
+						Name: name,
+					}
 				}
 				g.AddEdge(v.(*JobVertex), &job, 1)
 			}
