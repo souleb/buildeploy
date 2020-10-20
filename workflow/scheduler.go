@@ -46,7 +46,11 @@ func (s *SchedulerService) Schedule(workflow *app.Workflow) error {
 	fmt.Println("Here the scheduler take action")
 	fmt.Println(g)
 	fmt.Println("And the topological sort")
-	topOrder := g.TopologicalSort()
+	topOrder, err := g.TopologicalSort()
+	if err != nil {
+		fmt.Println(err)
+		return errors.Wrap(err, "Cannot Schedule a workflow with cycles.")
+	}
 	fmt.Println(*topOrder)
 	s.GraphMap[workflow.Name] = g
 	fmt.Println("\nScheduler has finished bye!!!")
@@ -64,10 +68,9 @@ func (s *SchedulerService) convertToGraph(workflow *app.Workflow) (*dag.Graph, e
 		hashMap[job.Name] = job.Hashcode().(string)
 		if needs := job.Needs; needs != nil {
 			for _, name := range needs {
-				// TO DO: Use cycle detection instead
 				v, ok := g.Vertex(hashMap[name])
 				if !ok {
-					// We go ahead and perform an early creation of the job,
+					// We go ahead and perform an early creation of the vertex,
 					// It will be overwritten later on in the for loop.
 					v = &JobVertex{
 						Name: name,
@@ -75,9 +78,9 @@ func (s *SchedulerService) convertToGraph(workflow *app.Workflow) (*dag.Graph, e
 				}
 				g.AddEdge(v.(*JobVertex), &job, 1)
 			}
-		} else {
-			g.Add(&job)
 		}
+		// We create the vertex in any case to overwrite early creation
+		g.Add(&job)
 	}
 
 	return &g, nil

@@ -1,51 +1,67 @@
 package dag
 
-import "fmt"
+type config struct {
+	graph    *Graph
+	index    *int
+	stack    *[]Vertex
+	indices  map[string]int
+	lowlinks map[string]int
+	onStack  map[string]bool
+}
 
 // Cycles detect and return cycles in the graph
 // It implements the tarjan algorithm
-func (g *Graph) Cycles() {
+// It returns a list of the first cycle found
+func (g *Graph) Cycles() []Vertex {
 	g2 := g.Copy()
-
 	index := 0
-
 	stack := make([]Vertex, 0, len(g2.adjacencyMap))
-	indices := make(map[string]int)
-	lowlinks := make(map[string]int)
-	onStack := make(map[string]bool)
+	conf := config{
+		graph:    g2,
+		index:    &index,
+		stack:    &stack,
+		indices:  make(map[string]int),
+		lowlinks: make(map[string]int),
+		onStack:  make(map[string]bool),
+	}
 
 	for _, v := range g2.hashMap {
-		fmt.Println(strongConnect(g2, &v, &index, &stack, indices, lowlinks, onStack))
+		scc := strongConnect(&v, &conf)
+		if len(scc) > 0 {
+			return scc
+		}
 	}
+
+	return nil
 
 }
 
-func strongConnect(g *Graph, source *Vertex, index *int, stack *[]Vertex, indices map[string]int, lowlinks map[string]int, onstack map[string]bool) []Vertex {
-	indices[hashcode(*source).(string)] = *index
-	lowlinks[hashcode(*source).(string)] = *index
-	*index++
-	*stack = append(*stack, *source)
-	onstack[hashcode(*source).(string)] = true
+func strongConnect(source *Vertex, conf *config) []Vertex {
+	conf.indices[hashcode(*source).(string)] = *conf.index
+	conf.lowlinks[hashcode(*source).(string)] = *conf.index
+	*conf.index++
+	*conf.stack = append(*conf.stack, *source)
+	conf.onStack[hashcode(*source).(string)] = true
 	output := []Vertex{}
 
 	src := hashcode(*source).(string)
 
-	for edge := range g.adjacencyMap[hashcode(*source)] {
-		target := edge.(Vertex)
+	for edge := range conf.graph.adjacencyMap[hashcode(*source)] {
+		target := conf.graph.hashMap[hashcode(edge)]
 		tar := hashcode(edge).(string)
-		if _, ok := indices[tar]; !ok {
-			strongConnect(g, &target, index, stack, indices, lowlinks, onstack)
-			lowlinks[src] = min(lowlinks[src], lowlinks[tar])
-		} else if onstack[hashcode(tar).(string)] {
-			lowlinks[src] = min(lowlinks[src], indices[tar])
+		if _, ok := conf.indices[tar]; !ok {
+			strongConnect(&target, conf)
+			conf.lowlinks[src] = min(conf.lowlinks[src], conf.lowlinks[tar])
+		} else if conf.onStack[hashcode(tar).(string)] {
+			conf.lowlinks[src] = min(conf.lowlinks[src], conf.indices[tar])
 		}
 	}
 
-	if lowlinks[src] == indices[src] {
+	if conf.lowlinks[src] == conf.indices[src] {
 		var w string
 		var v Vertex
 		for w != src {
-			v, *stack = (*stack)[len(*stack)-1], (*stack)[:len(*stack)-1]
+			v, *conf.stack = (*conf.stack)[len(*conf.stack)-1], (*conf.stack)[:len(*conf.stack)-1]
 			output = append(output, v)
 			w = hashcode(v).(string)
 		}
