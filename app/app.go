@@ -28,20 +28,19 @@ const (
 )
 
 type Pipeline struct {
-	ID         uint
-	WorkflowID uint
+	ID         int64
+	WorkflowID int64
 	Status     Status
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	DeletedAt  time.Time
 }
 
 // Workflow defines a set of jobs constituing the workflow.
 type Workflow struct {
-	ID        uint `gorm:"primaryKey"`
-	Name      string
-	Jobs      []Job
-	Status    Status
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time `gorm:"index"`
+	ID   int64
+	Name string
+	Jobs []Job
 }
 
 // WorkflowService represents a service for managing workflows.
@@ -53,7 +52,7 @@ type WorkflowService interface {
 // Job is a defined set of steps to execute
 // It uses a defined executor to do so
 type Job struct {
-	ID         uint `gorm:"primaryKey"`
+	ID         int64
 	Name       string
 	Runner     Runner
 	Steps      Commands
@@ -108,9 +107,9 @@ func (d *Docker) isJobRunner() {}
 
 // Machine is an executor type
 type Machine struct {
-	OS       string
-	CPUCores string
-	Memory   string
+	OS     string
+	Cpus   string
+	Memory string
 }
 
 func (m *Machine) isJobRunner() {}

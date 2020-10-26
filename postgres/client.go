@@ -1,21 +1,21 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 
+	_ "github.com/jackc/pgx/v4"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/souleb/buildeploy/app"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 var (
-	ErrInvalidID = errors.New("gorm: ID provided was invalid")
+	ErrInvalidID = errors.New("sql: ID provided was invalid")
 )
 
 type Client struct {
-	DB       *gorm.DB
+	DB       *sqlx.DB
 	Host     string
 	Port     int
 	User     string
@@ -47,39 +47,73 @@ func NewClient(opts ...Options) *Client {
 }
 
 func (c *Client) Open() error {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=%s",
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=%s",
 		c.Host, c.Port, c.User, c.Password, c.DBname, c.Timezone)
-	//dsn := "workflow=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
-
+	db, err := sqlx.Connect("pgx", psqlInfo)
 	if err != nil {
-		return errors.Wrap(err, "gorm DB open failed")
+		return errors.Wrap(err, "sqlx DB open failed")
 	}
-
-	//db.LogMode(true)
 
 	c.DB = db
 
 	return nil
 }
 
-// Read will read the provided workflow by ID.
-func (c *Client) Read(id uint) (*app.Workflow, error) {
-	var workflow app.Workflow
-	err := c.DB.Where("id = ?", id).First(&workflow).Error
+// ReadPipeline will get a pipeline by ID.
+func (c *Client) ReadPipeline(ctx context.Context, id uint, pipeline *app.Pipeline) error {
+	err := c.DB.GetContext(ctx, &pipeline, "SELECT * FROM pipeline WHERE id == $1", id)
 	if err != nil {
-		return nil, errors.Wrap(err, "gorm: ID provided was invalid")
+		return errors.Wrap(err, "sql: ID provided was invalid")
 	}
 
-	return &workflow, nil
+	return nil
+}
+
+// ReadWorkflow will get a workflow by ID.
+func (c *Client) ReadWorkflow(ctx context.Context, id uint, workflow *app.Workflow) error {
+	err := c.DB.GetContext(ctx, &workflow, "SELECT * FROM workflow WHERE id == $1", id)
+	if err != nil {
+		return errors.Wrap(err, "sql: ID provided was invalid")
+	}
+
+	return nil
+}
+
+// ReadJob will get a job by ID.
+func (c *Client) ReadJob(ctx context.Context, id uint, job *app.Job) error {
+	err := c.DB.GetContext(ctx, &job, "SELECT * FROM job WHERE id == $1", id)
+	if err != nil {
+		return errors.Wrap(err, "sql: ID provided was invalid")
+	}
+
+	return nil
 }
 
 // CreateWorkflow will create the provided workflow and backfill data
 // like the ID, CreatedAt, and UpdatedAt fields.
-func (c *Client) CreateWorkflow(workflow *app.Workflow) error {
-	return c.DB.Create(workflow).Error
+func (c *Client) CreateWorkflow(workflow *app.Workflow) (int64, error) {
+	stmt, err := c.DB.Prepare("INSERT INTO workflow(name) VALUES($1)")
+	if err != nil {
+		return 0, errors.Wrap(err, "sql: creation failed")
+	}
+
+	res, err := stmt.Exec(workflow.Name)
+	if err != nil {
+		return 0, errors.Wrap(err, "sql: creation failed")
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		return 0, errors.Wrap(err, "sql: creation failed")
+	}
+
+	workflow.ID = lastId
+
+	rowCnt, err := res.RowsAffected()
+	if err != nil {
+		return 0, errors.Wrap(err, "sql: creation failed")
+	}
+	return rowCnt, nil
 }
 
 // Update will update the provided workflow with all of the data // in the provided workflow object.

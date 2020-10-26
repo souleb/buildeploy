@@ -47,9 +47,9 @@ func convertToWorkflow(data *v1.Workflow) *app.Workflow {
 			}
 		case *v1.Job_Runner_Machine:
 			runnerInstance = &app.Machine{
-				OS:       job.Runner.Type.(*v1.Job_Runner_Machine).Machine.Os,
-				CPUCores: job.Runner.Type.(*v1.Job_Runner_Machine).Machine.CpuCores,
-				Memory:   job.Runner.Type.(*v1.Job_Runner_Machine).Machine.Memory,
+				OS:     job.Runner.Type.(*v1.Job_Runner_Machine).Machine.Os,
+				Cpus:   job.Runner.Type.(*v1.Job_Runner_Machine).Machine.Cpus,
+				Memory: job.Runner.Type.(*v1.Job_Runner_Machine).Machine.Memory,
 			}
 		}
 

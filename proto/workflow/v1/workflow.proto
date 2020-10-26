@@ -54,7 +54,7 @@ message Docker {
 
 message Machine {
 	string os = 1;
-	string cpuCores = 2;
+	string cpus = 2;
 	string memory = 3;
 }
 

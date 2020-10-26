@@ -28,6 +28,8 @@ func main() {
 		os.Exit(exitFail)
 	}
 
+	//defer client.Close()
+
 	/*ws := postgres.WorkflowService{Client: client}
 	ws.DestructiveReset()
 	ws.Create(&app.Workflow{})

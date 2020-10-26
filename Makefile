@@ -75,6 +75,7 @@ gen:
 	protoc -I. --grpc-gateway_out=logtostderr=true,paths=source_relative:. \
 	./proto/workflow/v1/workflow.proto
 
+.PHONY: docker-postgres
 ## docker-postgres: launch a new postgres server with a default db set to project's name
 docker-postgres:
 	@docker pull postgres
@@ -82,3 +83,11 @@ docker-postgres:
 	@docker run --rm --name pg-docker -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=$(DBNAME) \
 	-d -p 5432:5432 \
 	-v $(HOME)/docker/volumes/postgres:/var/lib/postgresql/data  postgres
+
+.PHONY: migrateup
+migrateup:
+    migrate -path db/migration -database "postgresql://postgres:postgres@localhost:5432/$(DBNAME)?sslmode=disable" -verbose up
+
+.PHONY: migratedown
+migratedown:
+    migrate -path db/migration -database "postgresql://postgres:postgres@localhost:5432/$(DBNAME)?sslmode=disable" -verbose down
