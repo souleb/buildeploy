@@ -59,34 +59,45 @@ func (c *Client) Open() error {
 	return nil
 }
 
-// ReadPipeline will get a pipeline by ID.
-func (c *Client) ReadPipeline(ctx context.Context, id uint, pipeline *app.Pipeline) error {
-	err := c.DB.GetContext(ctx, &pipeline, "SELECT * FROM pipeline WHERE id == $1", id)
-	if err != nil {
-		return errors.Wrap(err, "sql: ID provided was invalid")
-	}
+type queryParams struct {
+	query string
+	id    int64
+	value interface{}
+}
 
+type execParams struct {
+	insertCmd string
+	value     []interface{}
+}
+
+// ReadByID will retrieve a row by its id
+func (c *Client) ReadByID(ctx context.Context, params *queryParams) error {
+	err := c.DB.GetContext(ctx, params.value, params.query, params.id)
+	if err != nil {
+		return errors.Wrap(err, "PipelineService Client: ID provided was invalid")
+	}
 	return nil
 }
 
-// ReadWorkflow will get a workflow by ID.
-func (c *Client) ReadWorkflow(ctx context.Context, id uint, workflow *app.Workflow) error {
-	err := c.DB.GetContext(ctx, &workflow, "SELECT * FROM workflow WHERE id == $1", id)
+// Create will create the provided object and backfill data
+// like the ID, CreatedAt, and UpdatedAt fields.
+func (c *Client) Create(ctx context.Context, params *execParams) (int64, error) {
+	stmt, err := c.DB.Prepare(params.insertCmd)
 	if err != nil {
-		return errors.Wrap(err, "sql: ID provided was invalid")
+		return 0, errors.Wrap(err, "PipelineService Client: creation failed")
 	}
 
-	return nil
-}
-
-// ReadJob will get a job by ID.
-func (c *Client) ReadJob(ctx context.Context, id uint, job *app.Job) error {
-	err := c.DB.GetContext(ctx, &job, "SELECT * FROM job WHERE id == $1", id)
+	res, err := stmt.Exec(params.value...)
 	if err != nil {
-		return errors.Wrap(err, "sql: ID provided was invalid")
+		return 0, errors.Wrap(err, "sql: creation failed")
 	}
 
-	return nil
+	lastID, err := res.LastInsertId()
+	if err != nil {
+		return 0, errors.Wrap(err, "sql: creation failed")
+	}
+
+	return lastID, nil
 }
 
 // CreateWorkflow will create the provided workflow and backfill data
@@ -102,12 +113,12 @@ func (c *Client) CreateWorkflow(workflow *app.Workflow) (int64, error) {
 		return 0, errors.Wrap(err, "sql: creation failed")
 	}
 
-	lastId, err := res.LastInsertId()
+	lastID, err := res.LastInsertId()
 	if err != nil {
 		return 0, errors.Wrap(err, "sql: creation failed")
 	}
 
-	workflow.ID = lastId
+	workflow.ID = lastID
 
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
@@ -129,12 +140,4 @@ func (c *Client) Delete(id uint) error {
 
 	workflow := app.Workflow{ID: id}
 	return c.DB.Delete(&workflow).Error
-}
-
-func (c *Client) AutoMigrate(object interface{}) error {
-	if err := c.DB.AutoMigrate(object).Error; err != nil {
-		return fmt.Errorf(err())
-	}
-
-	return nil
 }

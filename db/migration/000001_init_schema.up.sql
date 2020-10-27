@@ -8,10 +8,11 @@ CREATE TYPE "status" AS ENUM (
 
 CREATE TABLE "pipeline" (
   "id" SERIAL PRIMARY KEY,
+  "name" varchar(50),
   "workflow_id" int,
   "status" status,
-  "created_at" timestamp,
-  "deleted_at" timestamp
+  "created_at" timestamptz,
+  "deleted_at" timestamptz
 );
 
 CREATE TABLE "workflow" (

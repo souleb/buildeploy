@@ -30,7 +30,7 @@ func main() {
 
 	//defer client.Close()
 
-	/*ws := postgres.WorkflowService{Client: client}
+	/*ws := postgres.PipelineService{Client: client}
 	ws.DestructiveReset()
 	ws.Create(&app.Workflow{})
 

@@ -10,7 +10,7 @@ import (
 )
 
 // Ensure SchedulerService implements app.SchedulerService.
-var _ app.SchedulerService = &SchedulerService{}
+var _ app.SchedulerService = (*SchedulerService)(nil)
 
 // Ensure that a Vdefined type is hashable.
 var _ dag.VertexHashable = (*JobVertex)(nil)

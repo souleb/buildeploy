@@ -4,15 +4,12 @@ import (
 	"context"
 	"log"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 	"github.com/souleb/buildeploy/app"
 	pb "github.com/souleb/buildeploy/proto/workflow/v1"
-	v1 "github.com/souleb/buildeploy/proto/workflow/v1"
 )
 
 type WorkflowHandler struct {
-	*httprouter.Router
 	SchemaService    app.SchemaService
 	SchedulerService app.SchedulerService
 
@@ -35,21 +32,21 @@ func (wh *WorkflowHandler) CreateWorkflow(ctx context.Context, createWorkflowReq
 	return &pb.CreateWorkflowResponse{Id: "testid"}, nil
 }
 
-func convertToWorkflow(data *v1.Workflow) *app.Workflow {
+func convertToWorkflow(data *pb.Workflow) *app.Workflow {
 	jobs := make([]app.Job, 0, len(data.Jobs))
 	for _, job := range data.Jobs {
 		var runnerInstance app.Runner
 		switch job.Runner.Type.(type) {
-		case *v1.Job_Runner_Docker:
+		case *pb.Job_Runner_Docker:
 			runnerInstance = &app.Docker{
-				Image: job.Runner.Type.(*v1.Job_Runner_Docker).Docker.Image,
-				Tags:  job.Runner.Type.(*v1.Job_Runner_Docker).Docker.Tags,
+				Image: job.Runner.Type.(*pb.Job_Runner_Docker).Docker.Image,
+				Tags:  job.Runner.Type.(*pb.Job_Runner_Docker).Docker.Tags,
 			}
-		case *v1.Job_Runner_Machine:
+		case *pb.Job_Runner_Machine:
 			runnerInstance = &app.Machine{
-				OS:     job.Runner.Type.(*v1.Job_Runner_Machine).Machine.Os,
-				Cpus:   job.Runner.Type.(*v1.Job_Runner_Machine).Machine.Cpus,
-				Memory: job.Runner.Type.(*v1.Job_Runner_Machine).Machine.Memory,
+				OS:     job.Runner.Type.(*pb.Job_Runner_Machine).Machine.Os,
+				Cpus:   job.Runner.Type.(*pb.Job_Runner_Machine).Machine.Cpus,
+				Memory: job.Runner.Type.(*pb.Job_Runner_Machine).Machine.Memory,
 			}
 		}
 

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"database/sql/driver"
 	"fmt"
 	"strconv"
@@ -29,6 +30,7 @@ const (
 
 type Pipeline struct {
 	ID         int64
+	Name       string
 	WorkflowID int64
 	Status     Status
 	CreatedAt  time.Time
@@ -43,10 +45,11 @@ type Workflow struct {
 	Jobs []Job
 }
 
-// WorkflowService represents a service for managing workflows.
-type WorkflowService interface {
-	GetByID(id uint) (*Workflow, error)
-	Create(w *Workflow) error
+// PipelineService represents a service for managing pipelines.
+type PipelineService interface {
+	GetJobByID(ctx context.Context, id int64) (*Job, error)
+	GetPipelineByID(ctx context.Context, id int64) (*Pipeline, error)
+	CreatePipeline(ctx context.Context, pipeline *Pipeline) (int64, error)
 }
 
 // Job is a defined set of steps to execute
