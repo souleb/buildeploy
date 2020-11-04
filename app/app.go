@@ -2,10 +2,6 @@ package app
 
 import (
 	"context"
-	"database/sql/driver"
-	"fmt"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -29,13 +25,14 @@ const (
 )
 
 type Pipeline struct {
-	ID         int64
-	Name       string
-	WorkflowID int64
-	Status     Status
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	DeletedAt  time.Time
+	ID   int64
+	Name string
+	//WorkflowID int64
+	workflows []Workflow
+	Status    Status
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt time.Time
 }
 
 // Workflow defines a set of jobs constituing the workflow.
@@ -55,46 +52,22 @@ type PipelineService interface {
 // Job is a defined set of steps to execute
 // It uses a defined executor to do so
 type Job struct {
-	ID         int64
-	Name       string
-	Runner     Runner
-	Steps      Commands
-	Env        string
-	Branches   string
-	Needs      []string
-	Status     Status
-	WorkflowID uint
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	DeletedAt  *time.Time `gorm:"index"`
+	ID       int64
+	Name     string
+	Runner   Runner
+	Steps    Commands
+	Env      string
+	Branches string
+	Needs    []string
+	Status   Status
+	//WorkflowID uint
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
 }
 
 // Commands are actions to be performed
 type Commands []string
-
-func (commands Commands) Value() (driver.Value, error) {
-	var quotedStrings []string
-	for _, str := range commands {
-		quotedStrings = append(quotedStrings, strconv.Quote(str))
-	}
-
-	value := fmt.Sprintf("{ %s }", strings.Join(quotedStrings, ","))
-
-	return value, nil
-}
-
-func (commands *Commands) Scan(src interface{}) error {
-	val, ok := src.([]byte)
-	if !ok {
-		return fmt.Errorf("unable to scan")
-	}
-	value := strings.TrimPrefix(string(val), "{")
-	value = strings.TrimSuffix(value, "}")
-
-	*commands = strings.Split(value, ",")
-
-	return nil
-}
 
 type Runner interface {
 	isJobRunner()

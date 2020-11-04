@@ -1,9 +1,12 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"os"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/souleb/buildeploy/http"
 	"github.com/souleb/buildeploy/postgres"
 	"github.com/souleb/buildeploy/workflow"
@@ -23,9 +26,19 @@ const (
 
 func main() {
 
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	debug := flag.Bool("debug", false, "sets log level to debug")
+
+	flag.Parse()
+
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if *debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
 	err := run(os.Stdout)
 	if err != nil {
-		os.Exit(exitFail)
+		log.Fatal().Err(err)
 	}
 
 	//defer client.Close()
@@ -48,7 +61,7 @@ func main() {
 
 	server, err := http.NewServer(scheduler)
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err)
 	}
 	server.Open()
 	defer server.Close()

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	_ "github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/souleb/buildeploy/app"
@@ -82,22 +82,19 @@ func (c *Client) ReadByID(ctx context.Context, params *queryParams) error {
 // Create will create the provided object and backfill data
 // like the ID, CreatedAt, and UpdatedAt fields.
 func (c *Client) Create(ctx context.Context, params *execParams) (int64, error) {
-	stmt, err := c.DB.Prepare(params.insertCmd)
+	stmt, err := c.DB.Preparex(params.insertCmd)
 	if err != nil {
 		return 0, errors.Wrap(err, "PipelineService Client: creation failed")
 	}
 
-	res, err := stmt.Exec(params.value...)
+	var id int64
+	err = stmt.GetContext(ctx, &id, params.value...)
+
 	if err != nil {
-		return 0, errors.Wrap(err, "sql: creation failed")
+		return 0, errors.Wrap(err, "sql: error during creation")
 	}
 
-	lastID, err := res.LastInsertId()
-	if err != nil {
-		return 0, errors.Wrap(err, "sql: creation failed")
-	}
-
-	return lastID, nil
+	return id, nil
 }
 
 // CreateWorkflow will create the provided workflow and backfill data
@@ -128,16 +125,16 @@ func (c *Client) CreateWorkflow(workflow *app.Workflow) (int64, error) {
 }
 
 // Update will update the provided workflow with all of the data // in the provided workflow object.
-func (c *Client) Update(workflow *app.Workflow) error {
-	return c.DB.Save(workflow).Error
-}
-
-// Delete will delete the workflow with the provided ID
-func (c *Client) Delete(id uint) error {
-	if id == 0 {
-		return fmt.Errorf("gorm: %d ID provided was invalid", id)
-	}
-
-	workflow := app.Workflow{ID: id}
-	return c.DB.Delete(&workflow).Error
-}
+//func (c *Client) Update(workflow *app.Workflow) error {
+//	return c.DB.Save(workflow).Error
+//}
+//
+//// Delete will delete the workflow with the provided ID
+//func (c *Client) Delete(id uint) error {
+//	if id == 0 {
+//		return fmt.Errorf("gorm: %d ID provided was invalid", id)
+//	}
+//
+//	workflow := app.Workflow{ID: id}
+//	return c.DB.Delete(&workflow).Error
+//}

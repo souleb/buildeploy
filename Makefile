@@ -1,5 +1,7 @@
 PROJECTNAME = $(shell basename "$(PWD)")
 DBNAME = $(PROJECTNAME)db
+DBUSER =  "postgres"
+DBPASSWORD = "postgres"
 
 # Go related variables.
 GOBASE = $(shell pwd)
@@ -80,14 +82,16 @@ gen:
 docker-postgres:
 	@docker pull postgres
 	@mkdir -p $(HOME)/docker/volumes/postgres
-	@docker run --rm --name pg-docker -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=$(DBNAME) \
+	@docker run --rm --name pg-docker -e POSTGRES_PASSWORD=$(DBPASSWORD) -e POSTGRES_DB=$(DBNAME) \
 	-d -p 5432:5432 \
 	-v $(HOME)/docker/volumes/postgres:/var/lib/postgresql/data  postgres
 
 .PHONY: migrateup
+##
 migrateup:
-    migrate -path db/migration -database "postgresql://postgres:postgres@localhost:5432/$(DBNAME)?sslmode=disable" -verbose up
+	@migrate -path db/migration -database "postgresql://$(DBUSER):$(DBPASSWORD)@localhost:5432/$(DBNAME)?sslmode=disable" -verbose up
 
 .PHONY: migratedown
+##
 migratedown:
-    migrate -path db/migration -database "postgresql://postgres:postgres@localhost:5432/$(DBNAME)?sslmode=disable" -verbose down
+	@migrate -path db/migration -database "postgresql://$(DBUSER):$(DBPASSWORD)@localhost:5432/$(DBNAME)?sslmode=disable" -verbose down
