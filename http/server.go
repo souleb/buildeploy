@@ -4,7 +4,7 @@ import (
 	"net"
 
 	"github.com/souleb/buildeploy/app"
-	pb "github.com/souleb/buildeploy/proto/workflow/v1"
+	pb "github.com/souleb/buildeploy/proto/pipeline/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -41,7 +41,7 @@ func NewServer(scheduler app.SchedulerService) (*Server, error) {
 
 func (s *Server) Open() error {
 
-	pb.RegisterWorkflowServiceServer(s.grpcServer, &WorkflowHandler{SchedulerService: s.scheduler})
+	pb.RegisterPipelineServiceServer(s.grpcServer, &PipelineHandler{SchedulerService: s.scheduler})
 	// Register reflection service on gRPC server.
 	reflection.Register(s.grpcServer)
 	s.grpcServer.Serve(s.ln)

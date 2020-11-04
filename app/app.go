@@ -28,7 +28,7 @@ type Pipeline struct {
 	ID   int64
 	Name string
 	//WorkflowID int64
-	workflows []Workflow
+	Workflows []Workflow
 	Status    Status
 	CreatedAt time.Time
 	UpdatedAt time.Time

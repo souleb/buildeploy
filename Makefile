@@ -73,9 +73,9 @@ help: Makefile
 .PHONY: gen
 ## gen: generate all proto files
 gen:
-	protoc -I. --go_out=plugins=grpc:$(GOPATH)/src ./proto/workflow/v1/workflow.proto
+	protoc -I. --go_out=plugins=grpc:$(GOPATH)/src ./proto/pipeline/v1/pipeline.proto
 	protoc -I. --grpc-gateway_out=logtostderr=true,paths=source_relative:. \
-	./proto/workflow/v1/workflow.proto
+	./proto/pipeline/v1/pipeline.proto
 
 .PHONY: docker-postgres
 ## docker-postgres: launch a new postgres server with a default db set to project's name

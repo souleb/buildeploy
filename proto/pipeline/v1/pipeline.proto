@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package workflow.v1;
+package pipeline.v1;
 
-option go_package = "github.com/souleb/buildeploy/proto/workflow/v1";
+option go_package = "github.com/souleb/buildeploy/proto/pipeline/v1";
 
 //import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 
-service WorkflowService {
-  rpc CreateWorkflow(CreateWorkflowRequest) returns (CreateWorkflowResponse) {
+service PipelineService {
+  rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {
 		option (google.api.http) ={
 			post: "/v1/workflow"
 			body: "item"
@@ -16,12 +16,17 @@ service WorkflowService {
 	}
 }
 
-message CreateWorkflowResponse {
+message CreatePipelineResponse {
   string id = 1;
 }
 
-message CreateWorkflowRequest {
-	Workflow item = 1;
+message CreatePipelineRequest {
+	Pipeline item = 1;
+}
+
+message Pipeline {
+	string name = 1;
+	repeated Workflow workflows = 2;
 }
 
 message Workflow {
