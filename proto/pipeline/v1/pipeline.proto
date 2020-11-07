@@ -10,7 +10,7 @@ import "google/api/annotations.proto";
 service PipelineService {
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {
 		option (google.api.http) ={
-			post: "/v1/workflow"
+			post: "/v1/pipeline"
 			body: "item"
 		};
 	}

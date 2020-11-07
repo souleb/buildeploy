@@ -1,5 +1,8 @@
 package http
 
+// TO DO:
+// Rename to delivery
+
 import (
 	"net"
 
@@ -14,20 +17,22 @@ const defaultAdrr = ":3000"
 type Server struct {
 	ln net.Listener
 	//Handler    *Handler
-	grpcServer *grpc.Server
-	Addr       string
-	scheduler  app.SchedulerService
+	grpcServer       *grpc.Server
+	Addr             string
+	schedulerService app.SchedulerService
+	pipelineService  app.PipelineService
 }
 
-func NewServer(scheduler app.SchedulerService) (*Server, error) {
+func NewServer(schedulerService app.SchedulerService, pipelineService app.PipelineService) (*Server, error) {
 
 	//creds, _ := credentials.NewServerTLSFromFile(certFile, keyFile)
 	server := &Server{
 		//Handler:    NewHandler(),
 		//grpcServer: grpc.NewServer(grpc.Creds(creds)),
-		grpcServer: grpc.NewServer(),
-		Addr:       defaultAdrr,
-		scheduler:  scheduler,
+		grpcServer:       grpc.NewServer(),
+		Addr:             defaultAdrr,
+		schedulerService: schedulerService,
+		pipelineService:  pipelineService,
 	}
 
 	ln, err := net.Listen("tcp", server.Addr)
@@ -41,7 +46,7 @@ func NewServer(scheduler app.SchedulerService) (*Server, error) {
 
 func (s *Server) Open() error {
 
-	pb.RegisterPipelineServiceServer(s.grpcServer, &PipelineHandler{SchedulerService: s.scheduler})
+	pb.RegisterPipelineServiceServer(s.grpcServer, &PipelineHandler{SchedulerService: s.schedulerService, PipelineService: s.pipelineService})
 	// Register reflection service on gRPC server.
 	reflection.Register(s.grpcServer)
 	s.grpcServer.Serve(s.ln)

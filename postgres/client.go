@@ -59,20 +59,29 @@ func (c *Client) Open() error {
 	return nil
 }
 
-type queryParams struct {
-	query string
-	id    int64
-	value interface{}
+func (c *Client) Close() error {
+	err := c.DB.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-type execParams struct {
-	insertCmd string
-	value     []interface{}
+type QueryParams struct {
+	Query string
+	ID    int64
+	Value interface{}
+}
+
+type ExecParams struct {
+	InsertCmd string
+	Values    []interface{}
 }
 
 // ReadByID will retrieve a row by its id
-func (c *Client) ReadByID(ctx context.Context, params *queryParams) error {
-	err := c.DB.GetContext(ctx, params.value, params.query, params.id)
+func (c *Client) ReadByID(ctx context.Context, params *QueryParams) error {
+	err := c.DB.GetContext(ctx, params.Value, params.Query, params.ID)
 	if err != nil {
 		return errors.Wrap(err, "PipelineService Client: ID provided was invalid")
 	}
@@ -81,14 +90,14 @@ func (c *Client) ReadByID(ctx context.Context, params *queryParams) error {
 
 // Create will create the provided object and backfill data
 // like the ID, CreatedAt, and UpdatedAt fields.
-func (c *Client) Create(ctx context.Context, params *execParams) (int64, error) {
-	stmt, err := c.DB.Preparex(params.insertCmd)
+func (c *Client) Create(ctx context.Context, params *ExecParams) (int64, error) {
+	stmt, err := c.DB.Preparex(params.InsertCmd)
 	if err != nil {
 		return 0, errors.Wrap(err, "PipelineService Client: creation failed")
 	}
 
 	var id int64
-	err = stmt.GetContext(ctx, &id, params.value...)
+	err = stmt.GetContext(ctx, &id, params.Values...)
 
 	if err != nil {
 		return 0, errors.Wrap(err, "sql: error during creation")

@@ -43,9 +43,9 @@ func (commands commands) Value() (driver.Value, error) {
 		quotedStrings = append(quotedStrings, strconv.Quote(str))
 	}
 
-	value := fmt.Sprintf("{ %s }", strings.Join(quotedStrings, ","))
+	Values := fmt.Sprintf("{ %s }", strings.Join(quotedStrings, ","))
 
-	return value, nil
+	return Values, nil
 }
 
 func (commands *commands) Scan(src interface{}) error {
@@ -53,10 +53,10 @@ func (commands *commands) Scan(src interface{}) error {
 	if !ok {
 		return fmt.Errorf("unable to scan")
 	}
-	value := strings.TrimPrefix(string(val), "{")
-	value = strings.TrimSuffix(value, "}")
+	Values := strings.TrimPrefix(string(val), "{")
+	Values = strings.TrimSuffix(Values, "}")
 
-	*commands = strings.Split(value, ",")
+	*commands = strings.Split(Values, ",")
 
 	return nil
 }
@@ -89,31 +89,31 @@ type machine struct {
 }
 
 // ReadWorkflow will get a workflow by ID.
-func (c *Client) ReadWorkflow(ctx context.Context, id uint, workflow *app.Workflow) error {
-	err := c.DB.GetContext(ctx, &workflow, "SELECT * FROM workflow WHERE id == $1", id)
-	if err != nil {
-		return errors.Wrap(err, "sql: ID provided was invalid")
-	}
-
-	return nil
-}
+//func (c *Client) ReadWorkflow(ctx context.Context, id uint, workflow *app.Workflow) error {
+//	err := c.DB.GetContext(ctx, &workflow, "SELECT * FROM workflow WHERE id == $1", id)
+//	if err != nil {
+//		return errors.Wrap(err, "sql: ID provided was invalid")
+//	}
+//
+//	return nil
+//}
 
 // GetJobByID will look up a pipeline with the provided ID.
 // If the Job is found, we will return a nil error
 // If there is an error, we will return an error with
 // more information about what went wrong.
 func (p *PipelineService) GetJobByID(ctx context.Context, id int64) (*app.Job, error) {
-	params := queryParams{
-		query: "SELECT * FROM job WHERE id == $1",
-		id:    id,
-		value: app.Job{},
+	params := QueryParams{
+		Query: "SELECT * FROM job WHERE id == $1",
+		ID:    id,
+		Value: app.Job{},
 	}
 	err := p.Client.ReadByID(ctx, &params)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed retrieving the pipeline")
 	}
 
-	res := params.value.(*app.Job)
+	res := params.Value.(*app.Job)
 	return res, nil
 }
 
@@ -122,17 +122,17 @@ func (p *PipelineService) GetJobByID(ctx context.Context, id int64) (*app.Job, e
 // If there is an error, we will return an error with
 // more information about what went wrong.
 func (p *PipelineService) GetPipelineByID(ctx context.Context, id int64) (*app.Pipeline, error) {
-	params := queryParams{
-		query: "SELECT * FROM pipeline WHERE id == $1",
-		id:    id,
-		value: app.Pipeline{},
+	params := QueryParams{
+		Query: "SELECT * FROM pipeline WHERE id == $1",
+		ID:    id,
+		Value: app.Pipeline{},
 	}
 	err := p.Client.ReadByID(ctx, &params)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed retrieving the pipeline")
 	}
 
-	res := params.value.(*app.Pipeline)
+	res := params.Value.(*app.Pipeline)
 	return res, nil
 }
 
@@ -144,9 +144,9 @@ func (p *PipelineService) CreatePipeline(ctx context.Context, pipeline *app.Pipe
 	args = append(args, pipeline.Status)
 	args = append(args, pipeline.CreatedAt)
 	//args = append(args, pipeline.DeletedAt)
-	params := execParams{
-		insertCmd: "INSERT INTO pipeline(name, status, created_at) VALUES($1, $2, $3) RETURNING id",
-		value:     args,
+	params := ExecParams{
+		InsertCmd: "INSERT INTO pipeline(name, status, created_at) VALUES($1, $2, $3) RETURNING id",
+		Values:    args,
 	}
 
 	return p.Client.Create(ctx, &params)
@@ -158,9 +158,9 @@ func (p *PipelineService) createWorkflow(ctx context.Context, workflow *workflow
 	var args []interface{}
 	args = append(args, workflow.name)
 	args = append(args, workflow.pipelineID)
-	params := execParams{
-		insertCmd: "INSERT INTO workflow(name, pipeline_id) VALUES($1, $2) RETURNING id",
-		value:     args,
+	params := ExecParams{
+		InsertCmd: "INSERT INTO workflow(name, pipeline_id) VALUES($1, $2) RETURNING id",
+		Values:    args,
 	}
 
 	return p.Client.Create(ctx, &params)
@@ -177,10 +177,10 @@ func (p *PipelineService) createJob(ctx context.Context, job *job) (int64, error
 	args = append(args, job.env)
 	args = append(args, job.branches)
 	args = append(args, job.status)
-	params := execParams{
-		insertCmd: "INSERT INTO job(name, workflow_id, edges, steps, env, branches, status" +
+	params := ExecParams{
+		InsertCmd: "INSERT INTO job(name, workflow_id, edges, steps, env, branches, status" +
 			") VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-		value: args,
+		Values: args,
 	}
 
 	return p.Client.Create(ctx, &params)
@@ -193,9 +193,9 @@ func (p *PipelineService) createDocker(ctx context.Context, docker *docker) (int
 	args = append(args, docker.jobID)
 	args = append(args, docker.image)
 	args = append(args, docker.tags)
-	params := execParams{
-		insertCmd: "INSERT INTO job_docker(job_id, image, tags) VALUES($1, $2, $3) RETURNING id",
-		value:     args,
+	params := ExecParams{
+		InsertCmd: "INSERT INTO job_docker(job_id, image, tags) VALUES($1, $2, $3) RETURNING id",
+		Values:    args,
 	}
 
 	return p.Client.Create(ctx, &params)
@@ -209,9 +209,9 @@ func (p *PipelineService) createMachine(ctx context.Context, machine *machine) (
 	args = append(args, machine.jobID)
 	args = append(args, machine.cpus)
 	args = append(args, machine.memory)
-	params := execParams{
-		insertCmd: "INSERT INTO job_machine(os, job_id, cpus, memory) VALUES($1, $2, $3, $4) RETURNING id",
-		value:     args,
+	params := ExecParams{
+		InsertCmd: "INSERT INTO job_machine(os, job_id, cpus, memory) VALUES($1, $2, $3, $4) RETURNING id",
+		Values:    args,
 	}
 
 	return p.Client.Create(ctx, &params)

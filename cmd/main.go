@@ -41,8 +41,6 @@ func main() {
 		log.Fatal().Err(err)
 	}
 
-	//defer client.Close()
-
 	/*ws := postgres.PipelineService{Client: client}
 	ws.DestructiveReset()
 	ws.Create(&app.Workflow{})
@@ -56,15 +54,6 @@ func main() {
 
 	fmt.Println(foundUser)
 	*/
-
-	scheduler := workflow.NewSchedulerService()
-
-	server, err := http.NewServer(scheduler)
-	if err != nil {
-		log.Fatal().Err(err)
-	}
-	server.Open()
-	defer server.Close()
 }
 
 func run(stdout io.Writer) error {
@@ -78,5 +67,24 @@ func run(stdout io.Writer) error {
 	}
 
 	client := postgres.NewClient(opt)
-	return client.Open()
+	err := client.Open()
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	ps := &postgres.PipelineService{Client: client}
+	scheduler := workflow.NewSchedulerService()
+
+	server, err := http.NewServer(scheduler, ps)
+	if err != nil {
+		return err
+	}
+	err = server.Open()
+	if err != nil {
+		return err
+	}
+	defer server.Close()
+
+	return nil
 }
