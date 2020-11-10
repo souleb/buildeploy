@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"os"
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"github.com/souleb/buildeploy/log"
+
 	"github.com/souleb/buildeploy/http"
 	"github.com/souleb/buildeploy/postgres"
 	"github.com/souleb/buildeploy/workflow"
@@ -26,19 +27,21 @@ const (
 
 func main() {
 
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	debug := flag.Bool("debug", false, "sets log level to debug")
 
 	flag.Parse()
 
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	level := "info"
+
 	if *debug {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		level = "debug"
 	}
 
-	err := run(os.Stdout)
+	log := log.New(os.Stdout, level)
+
+	err := run(os.Stdout, log)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal(err)
 	}
 
 	/*ws := postgres.PipelineService{Client: client}
@@ -56,7 +59,7 @@ func main() {
 	*/
 }
 
-func run(stdout io.Writer) error {
+func run(stdout io.Writer, log *log.Logger) error {
 	//New db connection
 	opt := func(c *postgres.Client) {
 		c.Host = host
@@ -65,26 +68,28 @@ func run(stdout io.Writer) error {
 		c.Password = password
 		c.DBname = dbname
 	}
-
+	log.Info(fmt.Sprintf("Starting Database db=%s, port=%d", dbname, port))
 	client := postgres.NewClient(opt)
-	err := client.Open()
-	if err != nil {
+	if err := client.Open(); err != nil {
 		return err
 	}
 	defer client.Close()
+	defer log.Info(fmt.Sprintf("Stopping Database db=%s, port=%d", dbname, port))
 
 	ps := &postgres.PipelineService{Client: client}
 	scheduler := workflow.NewSchedulerService()
 
-	server, err := http.NewServer(scheduler, ps)
+	log.Info(fmt.Sprintf("Starting Listener"))
+	server, err := http.New(scheduler, ps)
 	if err != nil {
 		return err
 	}
-	err = server.Open()
-	if err != nil {
+	if err = server.Open(); err != nil {
 		return err
 	}
+
 	defer server.Close()
+	defer log.Info(fmt.Sprintf("Stopping Listener"))
 
 	return nil
 }

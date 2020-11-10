@@ -46,21 +46,20 @@ type Workflow struct {
 type PipelineService interface {
 	GetJobByID(ctx context.Context, id int64) (*Job, error)
 	GetPipelineByID(ctx context.Context, id int64) (*Pipeline, error)
-	CreatePipeline(ctx context.Context, pipeline *Pipeline) (int64, error)
+	CreatePipeline(ctx context.Context, pipeline *Pipeline) error
 }
 
 // Job is a defined set of steps to execute
 // It uses a defined executor to do so
 type Job struct {
-	ID       int64
-	Name     string
-	Runner   Runner
-	Steps    Commands
-	Env      string
-	Branches string
-	Needs    []string
-	Status   Status
-	//WorkflowID uint
+	ID        int64
+	Name      string
+	Runner    Runner
+	Steps     Commands
+	Env       string
+	Branches  string
+	Needs     []string
+	Status    Status
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time
@@ -75,6 +74,7 @@ type Runner interface {
 
 // Docker is an Executor type
 type Docker struct {
+	ID    int64
 	Image string
 	Tags  string
 }
@@ -83,6 +83,7 @@ func (d *Docker) isJobRunner() {}
 
 // Machine is an executor type
 type Machine struct {
+	ID     int64
 	OS     string
 	Cpus   string
 	Memory string
@@ -98,4 +99,10 @@ type SchemaService interface {
 // SchedulerService represents a service for managing schedulers.
 type SchedulerService interface {
 	Schedule(workflow *Workflow) error
+}
+
+type LoggerService interface {
+	Info(msg string)
+	Debug(msg string)
+	Fatal(err error)
 }

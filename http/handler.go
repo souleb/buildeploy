@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/souleb/buildeploy/app"
 	pb "github.com/souleb/buildeploy/proto/pipeline/v1"
@@ -11,11 +11,9 @@ import (
 )
 
 type PipelineHandler struct {
-	SchemaService    app.SchemaService
-	SchedulerService app.SchedulerService
-	PipelineService  app.PipelineService
-
-	Logger *log.Logger
+	schemaService    app.SchemaService
+	schedulerService app.SchedulerService
+	pipelineService  app.PipelineService
 }
 
 func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequest *pb.CreatePipelineRequest) (*pb.CreatePipelineResponse, error) {
@@ -24,12 +22,12 @@ func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequ
 	}
 
 	pipeline := convertToPipeline(createPipelineRequest.GetItem())
-	id, err := p.PipelineService.CreatePipeline(ctx, pipeline)
+	err := p.pipelineService.CreatePipeline(ctx, pipeline)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not create the pipeline", err)
 	}
 
-	return &pb.CreatePipelineResponse{Id: string(id)}, nil
+	return &pb.CreatePipelineResponse{Id: fmt.Sprint(pipeline.ID)}, nil
 
 	/*err := wh.SchemaService.Validate(w)
 	if err != nil {

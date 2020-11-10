@@ -23,7 +23,7 @@ type Server struct {
 	pipelineService  app.PipelineService
 }
 
-func NewServer(schedulerService app.SchedulerService, pipelineService app.PipelineService) (*Server, error) {
+func New(schedulerService app.SchedulerService, pipelineService app.PipelineService) (*Server, error) {
 
 	//creds, _ := credentials.NewServerTLSFromFile(certFile, keyFile)
 	server := &Server{
@@ -46,7 +46,7 @@ func NewServer(schedulerService app.SchedulerService, pipelineService app.Pipeli
 
 func (s *Server) Open() error {
 
-	pb.RegisterPipelineServiceServer(s.grpcServer, &PipelineHandler{SchedulerService: s.schedulerService, PipelineService: s.pipelineService})
+	pb.RegisterPipelineServiceServer(s.grpcServer, &PipelineHandler{schedulerService: s.schedulerService, pipelineService: s.pipelineService})
 	// Register reflection service on gRPC server.
 	reflection.Register(s.grpcServer)
 	s.grpcServer.Serve(s.ln)

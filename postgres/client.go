@@ -7,7 +7,6 @@ import (
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"github.com/souleb/buildeploy/app"
 )
 
 var (
@@ -15,7 +14,7 @@ var (
 )
 
 type Client struct {
-	DB       *sqlx.DB
+	db       *sqlx.DB
 	Host     string
 	Port     int
 	User     string
@@ -51,16 +50,16 @@ func (c *Client) Open() error {
 		c.Host, c.Port, c.User, c.Password, c.DBname, c.Timezone)
 	db, err := sqlx.Connect("pgx", psqlInfo)
 	if err != nil {
-		return errors.Wrap(err, "sqlx DB open failed")
+		return errors.Wrap(err, "sqlx db open failed")
 	}
 
-	c.DB = db
+	c.db = db
 
 	return nil
 }
 
 func (c *Client) Close() error {
-	err := c.DB.Close()
+	err := c.db.Close()
 	if err != nil {
 		return err
 	}
@@ -68,36 +67,36 @@ func (c *Client) Close() error {
 	return nil
 }
 
-type QueryParams struct {
-	Query string
-	ID    int64
-	Value interface{}
+type queryParams struct {
+	query string
+	id    int64
+	value interface{}
 }
 
-type ExecParams struct {
-	InsertCmd string
-	Values    []interface{}
+type execParams struct {
+	insertCmd string
+	values    []interface{}
 }
 
-// ReadByID will retrieve a row by its id
-func (c *Client) ReadByID(ctx context.Context, params *QueryParams) error {
-	err := c.DB.GetContext(ctx, params.Value, params.Query, params.ID)
+// readByID will retrieve a row by its id
+func (c *Client) readByID(ctx context.Context, params *queryParams) error {
+	err := c.db.GetContext(ctx, params.value, params.query, params.id)
 	if err != nil {
 		return errors.Wrap(err, "PipelineService Client: ID provided was invalid")
 	}
 	return nil
 }
 
-// Create will create the provided object and backfill data
+// create will create the provided object and backfill data
 // like the ID, CreatedAt, and UpdatedAt fields.
-func (c *Client) Create(ctx context.Context, params *ExecParams) (int64, error) {
-	stmt, err := c.DB.Preparex(params.InsertCmd)
+func (c *Client) create(ctx context.Context, params *execParams) (int64, error) {
+	stmt, err := c.db.Preparex(params.insertCmd)
 	if err != nil {
 		return 0, errors.Wrap(err, "PipelineService Client: creation failed")
 	}
 
 	var id int64
-	err = stmt.GetContext(ctx, &id, params.Values...)
+	err = stmt.GetContext(ctx, &id, params.values...)
 
 	if err != nil {
 		return 0, errors.Wrap(err, "sql: error during creation")
@@ -106,36 +105,37 @@ func (c *Client) Create(ctx context.Context, params *ExecParams) (int64, error) 
 	return id, nil
 }
 
-// CreateWorkflow will create the provided workflow and backfill data
-// like the ID, CreatedAt, and UpdatedAt fields.
-func (c *Client) CreateWorkflow(workflow *app.Workflow) (int64, error) {
-	stmt, err := c.DB.Prepare("INSERT INTO workflow(name) VALUES($1)")
-	if err != nil {
-		return 0, errors.Wrap(err, "sql: creation failed")
-	}
-
-	res, err := stmt.Exec(workflow.Name)
-	if err != nil {
-		return 0, errors.Wrap(err, "sql: creation failed")
-	}
-
-	lastID, err := res.LastInsertId()
-	if err != nil {
-		return 0, errors.Wrap(err, "sql: creation failed")
-	}
-
-	workflow.ID = lastID
-
-	rowCnt, err := res.RowsAffected()
-	if err != nil {
-		return 0, errors.Wrap(err, "sql: creation failed")
-	}
-	return rowCnt, nil
-}
-
-// Update will update the provided workflow with all of the data // in the provided workflow object.
-//func (c *Client) Update(workflow *app.Workflow) error {
-//	return c.DB.Save(workflow).Error
+//
+//// CreateWorkflow will create the provided workflow and backfill data
+//// like the ID, CreatedAt, and UpdatedAt fields.
+//func (c *Client) CreateWorkflow(workflow *app.Workflow) (int64, error) {
+//	stmt, err := c.db.Prepare("INSERT INTO workflow(name) VALUES($1)")
+//	if err != nil {
+//		return 0, errors.Wrap(err, "sql: creation failed")
+//	}
+//
+//	res, err := stmt.Exec(workflow.Name)
+//	if err != nil {
+//		return 0, errors.Wrap(err, "sql: creation failed")
+//	}
+//
+//	lastID, err := res.LastInsertId()
+//	if err != nil {
+//		return 0, errors.Wrap(err, "sql: creation failed")
+//	}
+//
+//	workflow.ID = lastID
+//
+//	rowCnt, err := res.RowsAffected()
+//	if err != nil {
+//		return 0, errors.Wrap(err, "sql: creation failed")
+//	}
+//	return rowCnt, nil
+//}
+//
+//// Update will update the provided workflow with all of the data // in the provided workflow object.
+////func (c *Client) Update(workflow *app.Workflow) error {
+//	return c.db.Save(workflow).Error
 //}
 //
 //// Delete will delete the workflow with the provided ID
@@ -145,5 +145,5 @@ func (c *Client) CreateWorkflow(workflow *app.Workflow) (int64, error) {
 //	}
 //
 //	workflow := app.Workflow{ID: id}
-//	return c.DB.Delete(&workflow).Error
+//	return c.db.Delete(&workflow).Error
 //}

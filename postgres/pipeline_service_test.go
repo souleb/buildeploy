@@ -2,9 +2,7 @@ package postgres
 
 import (
 	"testing"
-	"time"
 
-	"github.com/souleb/buildeploy/app"
 	"golang.org/x/net/context"
 )
 
@@ -13,10 +11,9 @@ func TestCreatePipeline(t *testing.T) {
 		Client: testClient,
 	}
 
-	pipeline := app.Pipeline{
-		Name:      "TestCreatePipeline",
-		Status:    0,
-		CreatedAt: time.Now(),
+	pipeline := pipeline{
+		name:   "TestCreatePipeline",
+		status: 0,
 	}
 
 	workflow := workflow{
@@ -25,7 +22,7 @@ func TestCreatePipeline(t *testing.T) {
 
 	job := job{
 		name:     "TestCreateWorkflow",
-		edges:    "job1, job2",
+		needs:    []string{"job1", "job2"},
 		steps:    []string{"mkdir test", "rm -Rf test"},
 		env:      "develop",
 		branches: "feature*, develop",
@@ -35,7 +32,7 @@ func TestCreatePipeline(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("createPipeline", func(t *testing.T) {
-		id, err := service.CreatePipeline(ctx, &pipeline)
+		id, err := service.createPipeline(ctx, &pipeline)
 
 		if err != nil {
 			t.Errorf("TestCreatePipeline failed while creating the pipeline %s", err)
@@ -45,11 +42,11 @@ func TestCreatePipeline(t *testing.T) {
 			t.Errorf("TestCreatePipeline received unexpected id %d while creating the pipeline", id)
 		}
 
-		pipeline.ID = id
+		pipeline.id = id
 	})
 
 	t.Run("createWorkflow", func(t *testing.T) {
-		workflow.pipelineID = pipeline.ID
+		workflow.pipelineID = pipeline.id
 
 		id, err := service.createWorkflow(context.Background(), &workflow)
 
