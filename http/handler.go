@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/pkg/errors"
 	"github.com/souleb/buildeploy/app"
 	pb "github.com/souleb/buildeploy/proto/pipeline/v1"
 	"google.golang.org/grpc/codes"
@@ -11,11 +12,54 @@ import (
 )
 
 type PipelineHandler struct {
-	SchemaService    app.SchemaService
-	SchedulerService app.SchedulerService
-	PipelineService  app.PipelineService
+	schemaService    app.SchemaService
+	schedulerService app.SchedulerService
+	pipelineService  app.PipelineService
 
-	Logger *log.Logger
+	logger *log.Logger
+}
+
+func (p *PipelineHandler) store(ctx context.Context, pipeline *app.Pipeline) error {
+	pID, err := p.pipelineService.CreatePipeline(ctx, pipeline)
+	if err != nil {
+		return errors.Wrap(err, "Could not create the pipeline.")
+	}
+
+	pipeline.ID = pID
+
+	for k, w := range pipeline.Workflows {
+		wID, err := p.pipelineService.CreateWorkflow(ctx, &workflow{name: w.Name, pipelineID: pipeline.ID})
+		if err != nil {
+			return errors.Wrap(err, "Could not create the pipeline's workflow")
+		}
+		pipeline.Workflows[k].ID = wID
+
+		for k, j := range w.Jobs {
+			jID, err := p.pipelineService.CreateJob(ctx, &job{name: j.Name, workflowID: wID, needs: j.Needs, steps: array(j.Steps),
+				env: j.Env, branches: j.Branches, status: j.Status})
+			if err != nil {
+				return errors.Wrap(err, "Could not create the workflow's job")
+			}
+			w.Jobs[k].ID = jID
+			switch j.Runner.(type) {
+			case *app.Docker:
+				dID, err := p.pipelineService.CreateDocker(ctx, &docker{image: j.Runner.(*app.Docker).Image, tags: j.Runner.(*app.Docker).Tags, jobID: jID})
+				if err != nil {
+					return errors.Wrap(err, "Could not create the job's docker runner")
+				}
+				j.Runner.(*app.Docker).ID = dID
+			case *app.Machine:
+				mID, err := p.pipelineService.CreateMachine(ctx, &machine{os: j.Runner.(*app.Machine).OS, cpus: j.Runner.(*app.Machine).Cpus,
+					memory: j.Runner.(*app.Machine).Memory, jobID: jID})
+				if err != nil {
+					return errors.Wrap(err, "Could not create the job's machine runner")
+				}
+				j.Runner.(*app.Machine).ID = mID
+			}
+		}
+
+	}
+	return nil
 }
 
 func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequest *pb.CreatePipelineRequest) (*pb.CreatePipelineResponse, error) {
@@ -24,12 +68,12 @@ func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequ
 	}
 
 	pipeline := convertToPipeline(createPipelineRequest.GetItem())
-	id, err := p.PipelineService.CreatePipeline(ctx, pipeline)
+	err := p.store(ctx, pipeline)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not create the pipeline", err)
 	}
 
-	return &pb.CreatePipelineResponse{Id: string(id)}, nil
+	return &pb.CreatePipelineResponse{Id: string(pipeline.ID)}, nil
 
 	/*err := wh.SchemaService.Validate(w)
 	if err != nil {

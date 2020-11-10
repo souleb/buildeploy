@@ -67,8 +67,7 @@ func run(stdout io.Writer) error {
 	}
 
 	client := postgres.NewClient(opt)
-	err := client.Open()
-	if err != nil {
+	if err := client.Open(); err != nil {
 		return err
 	}
 	defer client.Close()
@@ -76,14 +75,14 @@ func run(stdout io.Writer) error {
 	ps := &postgres.PipelineService{Client: client}
 	scheduler := workflow.NewSchedulerService()
 
-	server, err := http.NewServer(scheduler, ps)
+	server, err := http.New(scheduler, ps)
 	if err != nil {
 		return err
 	}
-	err = server.Open()
-	if err != nil {
+	if err = server.Open(); err != nil {
 		return err
 	}
+
 	defer server.Close()
 
 	return nil

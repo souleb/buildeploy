@@ -75,6 +75,7 @@ type Runner interface {
 
 // Docker is an Executor type
 type Docker struct {
+	ID    int64
 	Image string
 	Tags  string
 }
@@ -83,6 +84,7 @@ func (d *Docker) isJobRunner() {}
 
 // Machine is an executor type
 type Machine struct {
+	ID     int64
 	OS     string
 	Cpus   string
 	Memory string

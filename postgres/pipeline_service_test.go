@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"testing"
-	"time"
 
 	"github.com/souleb/buildeploy/app"
 	"golang.org/x/net/context"
@@ -14,9 +13,8 @@ func TestCreatePipeline(t *testing.T) {
 	}
 
 	pipeline := app.Pipeline{
-		Name:      "TestCreatePipeline",
-		Status:    0,
-		CreatedAt: time.Now(),
+		Name:   "TestCreatePipeline",
+		Status: 0,
 	}
 
 	workflow := workflow{
@@ -25,7 +23,7 @@ func TestCreatePipeline(t *testing.T) {
 
 	job := job{
 		name:     "TestCreateWorkflow",
-		edges:    "job1, job2",
+		needs:    []string{"job1", "job2"},
 		steps:    []string{"mkdir test", "rm -Rf test"},
 		env:      "develop",
 		branches: "feature*, develop",

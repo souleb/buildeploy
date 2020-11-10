@@ -34,29 +34,28 @@ type workflow struct {
 	autoIncr
 }
 
-// Commands are actions to be performed
-type commands []string
+type array []string
 
-func (commands commands) Value() (driver.Value, error) {
+func (array array) Value() (driver.Value, error) {
 	var quotedStrings []string
-	for _, str := range commands {
+	for _, str := range array {
 		quotedStrings = append(quotedStrings, strconv.Quote(str))
 	}
 
-	Values := fmt.Sprintf("{ %s }", strings.Join(quotedStrings, ","))
+	values := fmt.Sprintf("{ %s }", strings.Join(quotedStrings, ","))
 
-	return Values, nil
+	return values, nil
 }
 
-func (commands *commands) Scan(src interface{}) error {
+func (array *array) Scan(src interface{}) error {
 	val, ok := src.([]byte)
 	if !ok {
 		return fmt.Errorf("unable to scan")
 	}
-	Values := strings.TrimPrefix(string(val), "{")
-	Values = strings.TrimSuffix(Values, "}")
+	values := strings.TrimPrefix(string(val), "{")
+	values = strings.TrimSuffix(values, "}")
 
-	*commands = strings.Split(Values, ",")
+	*array = strings.Split(values, ",")
 
 	return nil
 }
@@ -65,8 +64,8 @@ func (commands *commands) Scan(src interface{}) error {
 type job struct {
 	name       string
 	workflowID int64
-	edges      string
-	steps      commands
+	needs      array
+	steps      array
 	env        string
 	branches   string
 	status     app.Status
@@ -103,17 +102,17 @@ type machine struct {
 // If there is an error, we will return an error with
 // more information about what went wrong.
 func (p *PipelineService) GetJobByID(ctx context.Context, id int64) (*app.Job, error) {
-	params := QueryParams{
-		Query: "SELECT * FROM job WHERE id == $1",
-		ID:    id,
-		Value: app.Job{},
+	params := queryParams{
+		query: "SELECT * FROM job WHERE id == $1",
+		id:    id,
+		value: app.Job{},
 	}
-	err := p.Client.ReadByID(ctx, &params)
+	err := p.Client.readByID(ctx, &params)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed retrieving the pipeline")
 	}
 
-	res := params.Value.(*app.Job)
+	res := params.value.(*app.Job)
 	return res, nil
 }
 
@@ -122,17 +121,17 @@ func (p *PipelineService) GetJobByID(ctx context.Context, id int64) (*app.Job, e
 // If there is an error, we will return an error with
 // more information about what went wrong.
 func (p *PipelineService) GetPipelineByID(ctx context.Context, id int64) (*app.Pipeline, error) {
-	params := QueryParams{
-		Query: "SELECT * FROM pipeline WHERE id == $1",
-		ID:    id,
-		Value: app.Pipeline{},
+	params := queryParams{
+		query: "SELECT * FROM pipeline WHERE id == $1",
+		id:    id,
+		value: app.Pipeline{},
 	}
-	err := p.Client.ReadByID(ctx, &params)
+	err := p.Client.readByID(ctx, &params)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed retrieving the pipeline")
 	}
 
-	res := params.Value.(*app.Pipeline)
+	res := params.value.(*app.Pipeline)
 	return res, nil
 }
 
@@ -142,14 +141,50 @@ func (p *PipelineService) CreatePipeline(ctx context.Context, pipeline *app.Pipe
 	var args []interface{}
 	args = append(args, pipeline.Name)
 	args = append(args, pipeline.Status)
-	args = append(args, pipeline.CreatedAt)
-	//args = append(args, pipeline.DeletedAt)
-	params := ExecParams{
-		InsertCmd: "INSERT INTO pipeline(name, status, created_at) VALUES($1, $2, $3) RETURNING id",
-		Values:    args,
+	params := execParams{
+		insertCmd: "INSERT INTO pipeline(name, status) VALUES($1, $2) RETURNING id",
+		values:    args,
 	}
 
-	return p.Client.Create(ctx, &params)
+	pID, err := p.Client.create(ctx, &params)
+	if err != nil {
+		return -1, errors.Wrap(err, "Could not create the pipeline.")
+	}
+	pipeline.ID = pID
+
+	for k, w := range pipeline.Workflows {
+		wID, err := p.createWorkflow(ctx, &workflow{name: w.Name, pipelineID: pipeline.ID})
+		if err != nil {
+			return -1, errors.Wrap(err, "Could not create the pipeline's workflow")
+		}
+		pipeline.Workflows[k].ID = wID
+
+		for k, j := range w.Jobs {
+			jID, err := p.createJob(ctx, &job{name: j.Name, workflowID: wID, needs: j.Needs, steps: array(j.Steps),
+				env: j.Env, branches: j.Branches, status: j.Status})
+			if err != nil {
+				return -1, errors.Wrap(err, "Could not create the workflow's job")
+			}
+			w.Jobs[k].ID = jID
+			switch j.Runner.(type) {
+			case *app.Docker:
+				dID, err := p.createDocker(ctx, &docker{image: j.Runner.(*app.Docker).Image, tags: j.Runner.(*app.Docker).Tags, jobID: jID})
+				if err != nil {
+					return -1, errors.Wrap(err, "Could not create the job's docker runner")
+				}
+				j.Runner.(*app.Docker).ID = dID
+			case *app.Machine:
+				mID, err := p.createMachine(ctx, &machine{os: j.Runner.(*app.Machine).OS, cpus: j.Runner.(*app.Machine).Cpus,
+					memory: j.Runner.(*app.Machine).Memory, jobID: jID})
+				if err != nil {
+					return -1, errors.Wrap(err, "Could not create the job's machine runner")
+				}
+				j.Runner.(*app.Machine).ID = mID
+			}
+		}
+	}
+
+	return pID, nil
 }
 
 // createWorkflow will create the provided workflow and backfill data
@@ -158,12 +193,12 @@ func (p *PipelineService) createWorkflow(ctx context.Context, workflow *workflow
 	var args []interface{}
 	args = append(args, workflow.name)
 	args = append(args, workflow.pipelineID)
-	params := ExecParams{
-		InsertCmd: "INSERT INTO workflow(name, pipeline_id) VALUES($1, $2) RETURNING id",
-		Values:    args,
+	params := execParams{
+		insertCmd: "INSERT INTO workflow(name, pipeline_id) VALUES($1, $2) RETURNING id",
+		values:    args,
 	}
 
-	return p.Client.Create(ctx, &params)
+	return p.Client.create(ctx, &params)
 }
 
 // createJob will create the provided job and backfill data
@@ -172,18 +207,18 @@ func (p *PipelineService) createJob(ctx context.Context, job *job) (int64, error
 	var args []interface{}
 	args = append(args, job.name)
 	args = append(args, job.workflowID)
-	args = append(args, job.edges)
+	args = append(args, job.needs)
 	args = append(args, job.steps)
 	args = append(args, job.env)
 	args = append(args, job.branches)
 	args = append(args, job.status)
-	params := ExecParams{
-		InsertCmd: "INSERT INTO job(name, workflow_id, edges, steps, env, branches, status" +
+	params := execParams{
+		insertCmd: "INSERT INTO job(name, workflow_id, needs, steps, env, branches, status" +
 			") VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-		Values: args,
+		values: args,
 	}
 
-	return p.Client.Create(ctx, &params)
+	return p.Client.create(ctx, &params)
 }
 
 // createDocker will create the provided docker and backfill data
@@ -193,12 +228,12 @@ func (p *PipelineService) createDocker(ctx context.Context, docker *docker) (int
 	args = append(args, docker.jobID)
 	args = append(args, docker.image)
 	args = append(args, docker.tags)
-	params := ExecParams{
-		InsertCmd: "INSERT INTO job_docker(job_id, image, tags) VALUES($1, $2, $3) RETURNING id",
-		Values:    args,
+	params := execParams{
+		insertCmd: "INSERT INTO job_docker(job_id, image, tags) VALUES($1, $2, $3) RETURNING id",
+		values:    args,
 	}
 
-	return p.Client.Create(ctx, &params)
+	return p.Client.create(ctx, &params)
 }
 
 // createMachine will create the provided machine and backfill data
@@ -209,10 +244,10 @@ func (p *PipelineService) createMachine(ctx context.Context, machine *machine) (
 	args = append(args, machine.jobID)
 	args = append(args, machine.cpus)
 	args = append(args, machine.memory)
-	params := ExecParams{
-		InsertCmd: "INSERT INTO job_machine(os, job_id, cpus, memory) VALUES($1, $2, $3, $4) RETURNING id",
-		Values:    args,
+	params := execParams{
+		insertCmd: "INSERT INTO job_machine(os, job_id, cpus, memory) VALUES($1, $2, $3, $4) RETURNING id",
+		values:    args,
 	}
 
-	return p.Client.Create(ctx, &params)
+	return p.Client.create(ctx, &params)
 }

@@ -25,31 +25,33 @@ message CreatePipelineRequest {
 }
 
 message Pipeline {
-	string name = 1;
-	repeated Workflow workflows = 2;
+	int64 id = 1;
+	string name = 2;
+	repeated Workflow workflows = 3;
 }
 
 message Workflow {
-	string name = 1;
-	int32 id = 2;
+	int64 id = 1;
+	string name = 2;
 	repeated Job jobs = 3;
 	//google.protobuf.Timestamp created_at = 6;
 	//google.protobuf.Timestamp updated_at = 7;
 }
 
 message Job {
-	string name = 1;
+	int64 id = 1;
+	string name = 2;
 	message Runner {
 		oneof type {
 			Docker docker = 1;
 			Machine machine = 2;
 		}
 	}
-	Runner runner = 2;
-	Steps steps = 3;
-	string env = 4;
-	string branches = 5;
-	repeated string needs = 6;
+	Runner runner = 3;
+	Steps steps = 4;
+	string env = 5;
+	string branches = 6;
+	repeated string needs = 7;
 }
 
 message Docker {
