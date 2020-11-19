@@ -23,6 +23,7 @@ func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequ
 
 	pipeline := convertToPipeline(createPipelineRequest.GetItem())
 	err := p.pipelineService.CreatePipeline(ctx, pipeline)
+
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not create the pipeline", err)
 	}
