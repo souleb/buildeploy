@@ -96,9 +96,18 @@ type SchemaService interface {
 	Validate(data interface{}) error
 }
 
+type TransportService interface {
+	Subscribe(api string) Subscription
+}
+
+type Subscription interface {
+	Updates() <-chan *Pipeline // stream of pipeline pointers
+	Close() error              // shuts down the stream
+}
+
 // SchedulerService represents a service for managing schedulers.
 type SchedulerService interface {
-	Schedule(workflow *Workflow) error
+	Schedule() error
 }
 
 type LoggerService interface {

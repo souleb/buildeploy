@@ -7,10 +7,9 @@ import (
 	"os"
 
 	"github.com/souleb/buildeploy/log"
-
-	"github.com/souleb/buildeploy/http"
+	"github.com/souleb/buildeploy/pipeline"
 	"github.com/souleb/buildeploy/postgres"
-	"github.com/souleb/buildeploy/workflow"
+	"github.com/souleb/buildeploy/transport"
 )
 
 const (
@@ -77,16 +76,18 @@ func run(stdout io.Writer, log *log.Logger) error {
 	defer log.Info(fmt.Sprintf("Stopping Database db=%s, port=%d", dbname, port))
 
 	ps := &postgres.PipelineService{Client: client}
-	scheduler := workflow.NewSchedulerService()
 
 	log.Info(fmt.Sprintf("Starting Listener"))
-	server, err := http.New(scheduler, ps)
+	server, err := transport.NewServer(ps)
 	if err != nil {
 		return err
 	}
 	if err = server.Open(); err != nil {
 		return err
 	}
+
+	scheduler := pipeline.NewSchedulerService(log, server)
+	scheduler.Schedule()
 
 	defer server.Close()
 	defer log.Info(fmt.Sprintf("Stopping Listener"))

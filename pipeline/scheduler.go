@@ -1,4 +1,4 @@
-package workflow
+package pipeline
 
 import (
 	"fmt"
@@ -6,13 +6,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/souleb/buildeploy/app"
-	"github.com/souleb/buildeploy/workflow/internal/dag"
+	"github.com/souleb/buildeploy/pipeline/internal/dag"
 )
 
 // Ensure SchedulerService implements app.SchedulerService.
 var _ app.SchedulerService = (*SchedulerService)(nil)
 
-// Ensure that a Vdefined type is hashable.
+// Ensure that a JobVertex type is hashable.
 var _ dag.VertexHashable = (*JobVertex)(nil)
 
 type JobVertex app.Job
@@ -29,31 +29,46 @@ func (j *JobVertex) Hashcode() interface{} {
 // Finally add tasks to a queue
 type SchedulerService struct {
 	GraphMap map[string]*dag.Graph
+	server   app.TransportService
+	logger   app.LoggerService
+	//server
 }
 
-func NewSchedulerService() *SchedulerService {
+func NewSchedulerService(logger app.LoggerService, server app.TransportService) *SchedulerService {
 	return &SchedulerService{
 		GraphMap: make(map[string]*dag.Graph),
+		logger:   logger,
+		server:   server,
 	}
 }
 
 // Schedule take a workflow and defines how to run it.
-func (s *SchedulerService) Schedule(workflow *app.Workflow) error {
-	g, err := s.convertToGraph(workflow)
-	if err != nil {
-		return errors.Wrap(err, "creating a graph of this workflow failed.")
+func (s *SchedulerService) Schedule() error {
+	ch := s.server.Subscribe("pipelineService")
+
+	for event := range ch.Updates() {
+		go func(event *app.Pipeline) {
+			pipeline := event
+			for _, workflow := range pipeline.Workflows {
+				g, err := s.convertToGraph(&workflow)
+				if err != nil {
+					//log
+					s.logger.Fatal(errors.Wrap(err, "creating a graph of this workflow failed."))
+					return
+				}
+				topOrder, err := g.TopologicalSort()
+				if err != nil {
+					//log
+					s.logger.Fatal(errors.Wrap(err, "Cannot Schedule a workflow with cycles."))
+					return
+				}
+				fmt.Println(*topOrder)
+				s.GraphMap[workflow.Name] = g
+				fmt.Println("\nScheduler has finished bye!!!")
+			}
+		}(event)
 	}
-	fmt.Println("Here the scheduler take action")
-	fmt.Println(g)
-	fmt.Println("And the topological sort")
-	topOrder, err := g.TopologicalSort()
-	if err != nil {
-		fmt.Println(err)
-		return errors.Wrap(err, "Cannot Schedule a workflow with cycles.")
-	}
-	fmt.Println(*topOrder)
-	s.GraphMap[workflow.Name] = g
-	fmt.Println("\nScheduler has finished bye!!!")
+
 	return nil
 }
 

@@ -1,8 +1,10 @@
-package http
+package transport
 
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/souleb/buildeploy/app"
 	pb "github.com/souleb/buildeploy/proto/pipeline/v1"
@@ -11,9 +13,30 @@ import (
 )
 
 type PipelineHandler struct {
-	schemaService    app.SchemaService
-	schedulerService app.SchedulerService
-	pipelineService  app.PipelineService
+	schemaService   app.SchemaService
+	pipelineService app.PipelineService
+	m               *sync.Mutex
+	pipelines       []*app.Pipeline
+}
+
+func (p *PipelineHandler) Fetch() ([]*app.Pipeline, time.Time, error) {
+	p.m.Lock()
+	defer p.m.Unlock()
+
+	if len(p.pipelines) == 0 {
+		return nil, time.Now().Add(1 * time.Millisecond), fmt.Errorf("No pipeline to fetch.")
+	}
+
+	response := p.pipelines
+	p.pipelines = nil
+
+	return response, time.Now().Add(1 * time.Millisecond), nil
+}
+
+func (p *PipelineHandler) store(pipeline *app.Pipeline) {
+	p.m.Lock()
+	defer p.m.Unlock()
+	p.pipelines = append(p.pipelines, pipeline)
 }
 
 func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequest *pb.CreatePipelineRequest) (*pb.CreatePipelineResponse, error) {
@@ -28,6 +51,13 @@ func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequ
 		return nil, status.Errorf(codes.Internal, "Could not create the pipeline", err)
 	}
 
+	go p.store(pipeline)
+	/*
+		err = p.schedulerService.Schedule(pipeline)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Could not run the Pipeline.", err)
+		}*/
+
 	return &pb.CreatePipelineResponse{Id: fmt.Sprint(pipeline.ID)}, nil
 
 	/*err := wh.SchemaService.Validate(w)
@@ -35,12 +65,6 @@ func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequ
 		return nil, err
 	}*/
 
-	//err := wh.SchedulerService.Schedule(p)
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "Impossible to schedule the Pipeline.")
-	//}
-
-	return &pb.CreatePipelineResponse{Id: "testid"}, nil
 }
 
 func convertToPipeline(data *pb.Pipeline) *app.Pipeline {
