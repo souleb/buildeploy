@@ -15,20 +15,28 @@ import (
 type PipelineHandler struct {
 	schemaService   app.SchemaService
 	pipelineService app.PipelineService
-	m               *sync.Mutex
-	pipelines       []*app.Pipeline
+	m               sync.Mutex
+	pipelineStore   []*app.Pipeline
+}
+
+func newPipelineHandler(schemaService app.SchemaService, pipelineService app.PipelineService) *PipelineHandler {
+	return &PipelineHandler{
+		schemaService:   schemaService,
+		pipelineService: pipelineService,
+		pipelineStore:   make([]*app.Pipeline, 0),
+	}
 }
 
 func (p *PipelineHandler) Fetch() ([]*app.Pipeline, time.Time, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	if len(p.pipelines) == 0 {
+	if len(p.pipelineStore) == 0 {
 		return nil, time.Now().Add(1 * time.Millisecond), fmt.Errorf("No pipeline to fetch.")
 	}
 
-	response := p.pipelines
-	p.pipelines = nil
+	response := p.pipelineStore
+	p.pipelineStore = nil
 
 	return response, time.Now().Add(1 * time.Millisecond), nil
 }
@@ -36,13 +44,19 @@ func (p *PipelineHandler) Fetch() ([]*app.Pipeline, time.Time, error) {
 func (p *PipelineHandler) store(pipeline *app.Pipeline) {
 	p.m.Lock()
 	defer p.m.Unlock()
-	p.pipelines = append(p.pipelines, pipeline)
+	p.pipelineStore = append(p.pipelineStore, pipeline)
 }
 
 func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequest *pb.CreatePipelineRequest) (*pb.CreatePipelineResponse, error) {
 	if createPipelineRequest.Item.Name == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "`Pipeline` name is not set")
 	}
+
+	// TODO : @souleb Add a schema validation with jsonschema
+	/*err := wh.SchemaService.Validate(w)
+	if err != nil {
+		return nil, err
+	}*/
 
 	pipeline := convertToPipeline(createPipelineRequest.GetItem())
 	err := p.pipelineService.CreatePipeline(ctx, pipeline)
@@ -52,18 +66,8 @@ func (p *PipelineHandler) CreatePipeline(ctx context.Context, createPipelineRequ
 	}
 
 	go p.store(pipeline)
-	/*
-		err = p.schedulerService.Schedule(pipeline)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not run the Pipeline.", err)
-		}*/
 
 	return &pb.CreatePipelineResponse{Id: fmt.Sprint(pipeline.ID)}, nil
-
-	/*err := wh.SchemaService.Validate(w)
-	if err != nil {
-		return nil, err
-	}*/
 
 }
 

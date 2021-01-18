@@ -24,7 +24,7 @@ COMMIT_SHA = $(shell git rev-parse --short HEAD)
 ## build: build the application
 build: clean
 	@echo "Building..."
-	@go build -o $(APP) ./cmd/main.go
+	@go build -o $(PROJECTNAME) ./cmd/main.go
 
 .PHONY: run
 ## run: runs go run main.go

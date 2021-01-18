@@ -17,7 +17,6 @@ CREATE TABLE "job" (
   "id" SERIAL PRIMARY KEY,
   "name" varchar(50),
   "workflow_id" int,
-  "edges" varchar,
   "steps" varchar,
   "env" varchar(255),
   "branches" varchar(255),

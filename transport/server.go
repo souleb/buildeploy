@@ -23,10 +23,12 @@ type Server struct {
 	grpcServer      *grpc.Server
 	Addr            string
 	pipelineService app.PipelineService
+	schemaService   app.SchemaService
+	logger          app.LoggerService
 	apiList         map[string]interface{} // keep Apis references to ask them to add watches
 }
 
-func NewServer(pipelineService app.PipelineService) (*Server, error) {
+func NewServer(pipelineService app.PipelineService, logger app.LoggerService) (*Server, error) {
 
 	//creds, _ := credentials.NewServerTLSFromFile(certFile, keyFile)
 	server := &Server{
@@ -35,6 +37,8 @@ func NewServer(pipelineService app.PipelineService) (*Server, error) {
 		grpcServer:      grpc.NewServer(),
 		Addr:            defaultAdrr,
 		pipelineService: pipelineService,
+		logger:          logger,
+		apiList:         make(map[string]interface{}),
 	}
 
 	ln, err := net.Listen("tcp", server.Addr)
@@ -48,12 +52,17 @@ func NewServer(pipelineService app.PipelineService) (*Server, error) {
 
 func (s *Server) Open() error {
 
-	pipelineHandler := PipelineHandler{pipelineService: s.pipelineService}
-	s.apiList["pipelineService"] = &pipelineHandler
-	pb.RegisterPipelineServiceServer(s.grpcServer, &pipelineHandler)
+	pipelineHandler := newPipelineHandler(s.schemaService, s.pipelineService)
+	s.apiList["pipelineService"] = pipelineHandler
+	pb.RegisterPipelineServiceServer(s.grpcServer, pipelineHandler)
 	// Register reflection service on gRPC server.
 	reflection.Register(s.grpcServer)
-	s.grpcServer.Serve(s.ln)
+	go func() {
+		err := s.grpcServer.Serve(s.ln)
+		if err != nil {
+			s.logger.Fatal(err)
+		}
+	}()
 
 	return nil
 }

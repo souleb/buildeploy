@@ -94,16 +94,6 @@ type machine struct {
 	autoIncr
 }
 
-// ReadWorkflow will get a workflow by ID.
-//func (c *Client) ReadWorkflow(ctx context.Context, id uint, workflow *app.Workflow) error {
-//	err := c.DB.GetContext(ctx, &workflow, "SELECT * FROM workflow WHERE id == $1", id)
-//	if err != nil {
-//		return errors.Wrap(err, "sql: ID provided was invalid")
-//	}
-//
-//	return nil
-//}
-
 // GetJobByID will look up a pipeline with the provided ID.
 // If the Job is found, we will return a nil error
 // If there is an error, we will return an error with

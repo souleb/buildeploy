@@ -44,8 +44,11 @@ func NewSchedulerService(logger app.LoggerService, server app.TransportService) 
 
 // Schedule take a workflow and defines how to run it.
 func (s *SchedulerService) Schedule() error {
+	s.logger.Info("The Scheduler has started!")
 	ch := s.server.Subscribe("pipelineService")
 
+	//TO DO
+	// ADD a notification channem for errors
 	for event := range ch.Updates() {
 		go func(event *app.Pipeline) {
 			pipeline := event
@@ -53,16 +56,18 @@ func (s *SchedulerService) Schedule() error {
 				g, err := s.convertToGraph(&workflow)
 				if err != nil {
 					//log
-					s.logger.Fatal(errors.Wrap(err, "creating a graph of this workflow failed."))
+					s.logger.Info(errors.Wrap(err, "creating a graph of this workflow failed.").Error())
 					return
 				}
 				topOrder, err := g.TopologicalSort()
 				if err != nil {
 					//log
-					s.logger.Fatal(errors.Wrap(err, "Cannot Schedule a workflow with cycles."))
+					s.logger.Info(errors.Wrap(err, "Cannot Schedule a workflow with cycles.").Error())
 					return
 				}
-				fmt.Println(*topOrder)
+				fmt.Println("toporder", *topOrder)
+				// TO DO
+				// Add sync
 				s.GraphMap[workflow.Name] = g
 				fmt.Println("\nScheduler has finished bye!!!")
 			}

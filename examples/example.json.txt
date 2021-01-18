@@ -1,0 +1,170 @@
+//With Cycles
+
+grpcurl -plaintext -d @ localhost:3000 pipeline.v1.PipelineService/CreatePipeline << EOM
+{
+  "item": {
+    "name": "dev pipeline 1",
+    "workflows": [
+      {
+        "name": "workflow1",
+        "jobs": [
+          {
+            "name": "job1",
+            "runner": {
+              "docker": {
+                "image": "dev.docker.io/golang:stable",
+                "tags": "golang:true, npm:false, prod: false"
+              }
+            },
+            "env": "dev",
+            "steps": [
+              {
+                "command": "echo Hello World in dev!"
+              }
+            ],
+            "branches": "develop",
+            "needs": "job3"
+          },
+          {
+            "name": "job2",
+            "runner": {
+              "docker": {
+                "image": "dev.docker.io/golang:stable",
+                "tags": "golang:true, npm:false, prod: false"
+              }
+            },
+            "env": "dev",
+            "steps": [
+              {
+                "command": "echo Hello World in dev!"
+              }
+            ],
+            "branches": "develop",
+            "needs": "job1"
+          },
+          {
+            "name": "job3",
+            "runner": {
+              "docker": {
+                "image": "dev.docker.io/golang:stable",
+                "tags": "golang:true, npm:false, prod: false"
+              }
+            },
+            "env": "dev",
+            "steps": [
+              {
+                "command": "echo Hello World in dev!"
+              }       
+            ],
+            "branches": "develop",
+            "needs": "job2"
+          },
+          {
+            "name": "job4",
+            "runner": {
+              "machine": {
+                "os": "linux",
+                "cpus": "2",
+                "memory": "256m"
+              }
+            },
+            "env": "dev",
+            "steps": [
+              {
+                "command": "echo Hello World in dev!"
+              }       
+            ],
+            "branches": "develop",
+            "needs": "job2"
+          }
+        ]  
+      }
+    ] 
+  }
+}
+EOM
+
+
+// No cycles
+grpcurl -plaintext -d @ localhost:3000 pipeline.v1.PipelineService/CreatePipeline << EOM
+{
+  "item": {
+    "name": "dev pipeline 1",
+    "workflows": [
+      {
+        "name": "workflow1",
+        "jobs": [
+          {
+            "name": "job1",
+            "runner": {
+              "docker": {
+                "image": "dev.docker.io/golang:stable",
+                "tags": "golang:true, npm:false, prod: false"
+              }
+            },
+            "env": "dev",
+            "steps": [
+              {
+                "command": "echo Hello World in dev!"
+              }
+            ],
+            "branches": "develop"
+          },
+          {
+            "name": "job2",
+            "runner": {
+              "docker": {
+                "image": "dev.docker.io/golang:stable",
+                "tags": "golang:true, npm:false, prod: false"
+              }
+            },
+            "env": "dev",
+            "steps": [
+              {
+                "command": "echo Hello World in dev!"
+              }
+            ],
+            "branches": "develop",
+            "needs": "job1"
+          },
+          {
+            "name": "job3",
+            "runner": {
+              "docker": {
+                "image": "dev.docker.io/golang:stable",
+                "tags": "golang:true, npm:false, prod: false"
+              }
+            },
+            "env": "dev",
+            "steps": [
+              {
+                "command": "echo Hello World in dev!"
+              }       
+            ],
+            "branches": "develop",
+            "needs": "job2"
+          },
+          {
+            "name": "job4",
+            "runner": {
+              "machine": {
+                "os": "linux",
+                "cpus": "2",
+                "memory": "256m"
+              }
+            },
+            "env": "dev",
+            "steps": [
+              {
+                "command": "echo Hello World in dev!"
+              }       
+            ],
+            "branches": "develop",
+            "needs": "job2"
+          }
+        ]  
+      }
+    ] 
+  }
+}
+//EOM

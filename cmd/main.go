@@ -56,6 +56,8 @@ func main() {
 
 	fmt.Println(foundUser)
 	*/
+	//reader := bufio.NewReader(os.Stdin)
+	//reader.ReadString('\n')
 }
 
 func run(stdout io.Writer, log *log.Logger) error {
@@ -67,30 +69,34 @@ func run(stdout io.Writer, log *log.Logger) error {
 		c.Password = password
 		c.DBname = dbname
 	}
-	log.Info(fmt.Sprintf("Starting Database db=%s, port=%d", dbname, port))
+	log.Info(fmt.Sprintf("Starting Database connection db=%s, port=%d", dbname, port))
 	client := postgres.NewClient(opt)
 	if err := client.Open(); err != nil {
 		return err
 	}
 	defer client.Close()
-	defer log.Info(fmt.Sprintf("Stopping Database db=%s, port=%d", dbname, port))
+	defer log.Info(fmt.Sprintf("Stopping Database connection db=%s, port=%d", dbname, port))
 
 	ps := &postgres.PipelineService{Client: client}
 
-	log.Info(fmt.Sprintf("Starting Listener"))
-	server, err := transport.NewServer(ps)
+	log.Info("Starting Listener...")
+	server, err := transport.NewServer(ps, log)
 	if err != nil {
 		return err
 	}
+
 	if err = server.Open(); err != nil {
-		return err
+		log.Fatal(err)
 	}
-
-	scheduler := pipeline.NewSchedulerService(log, server)
-	scheduler.Schedule()
-
 	defer server.Close()
 	defer log.Info(fmt.Sprintf("Stopping Listener"))
+
+	scheduler := pipeline.NewSchedulerService(log, server)
+	log.Info("Starting the Scheduler...")
+	err = scheduler.Schedule()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return nil
 }
